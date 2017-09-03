@@ -87,7 +87,7 @@ def normlization(image):
 
 def im_avg(im):
     '''compress image from rbg to grayscale, input should be numpy array'''
-    return average(im, axis=2).reshape(32,32,1)
+    return average(im, axis=2).reshape(28,28,1)
 
 def loaddata_face(path, batch_size):
     # for file in os.listdir(path):
@@ -103,9 +103,12 @@ def loaddata_face(path, batch_size):
         image_n.append(im_avg(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1]))))) # jpgfile.shape: , normalized
         # image_n.append(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))) # image is averaged
     image_n = asarray(image_n)
-    return image_n[random.choice(len(image_n), batch_size)]
+    res = image_n[random.choice(len(image_n), batch_size)]
+    res = res.reshape((batch_size, 784))
+    print res.shape
+    return res
 
-# path = "./face/CelebA/img_align_celeba_10000_1st_r/""
+# path = "./face/CelebA/img_align_celeba_10000_1st_r/"
 # batch_size = 2
 # im = loaddata_face(path, batch_size)
 # print im

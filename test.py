@@ -14,7 +14,7 @@ from tensorflow.contrib.layers import batch_norm
 import matplotlib.gridspec as gridspec
 import sys, time, argparse
 import tensorflow as tf
-from utilize import normlization
+from utilize import normlization, loaddata_face
 import csv
 from heapq import nsmallest
 # from sklearn import linear_model
@@ -22,6 +22,7 @@ import shutil
 import scipy.misc
 from resizeimage import resizeimage
 from face.dcgan import Generator
+from tensorflow.examples.tutorials.mnist import input_data
 
 
 
@@ -30,6 +31,8 @@ from face.dcgan import Generator
 #feature_dictionary.pkl: type: dict, len: 942, MIMIC_ICD9['619']: 508
 #patient_vectors.pkl: type: dict, len: 46520, len of each: 942, type of each: list
 
+print "we need to print out something"
+print "something change"
 print "Test begin"
 print "Test end"
 print bx.shape
