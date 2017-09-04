@@ -78,6 +78,7 @@ class WassersteinGAN(object):
                  d_iters = 100
 
             for _ in range(0, d_iters): # train discriminator
+                print "we need to print out something"
                 data_td, label_td = self.x_sampler(batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_clip)
