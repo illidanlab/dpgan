@@ -125,7 +125,7 @@ class WassersteinGAN(object):
         N = 20 # generate images from generator, after finish training
         z_sample = self.z_sampler(N, self.z_dim)
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample}) # type(x_gene): <type 'numpy.ndarray'>, x_gene[0].shape: (784,)
-        MNIST_data, MNIST_labels = loaddata('0123456789', 'training', r'./mnisttest/MNIST')  # # load whole training set of MNIST database
+        MNIST_data, MNIST_labels = loaddata('0123456789', 'training', r'./face_test/MNIST')  # # load whole training set of MNIST database
         MNIST_data_n = [] # normlized (/255)
         for i in range(len(MNIST_data)):
             MNIST_data_n.append(normlization(MNIST_data[i]))
@@ -248,8 +248,8 @@ class WassersteinGAN(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('')
-    parser.add_argument('--data', type=str, default='mnisttest')
-    parser.add_argument('--model', type=str, default='mlp')
+    parser.add_argument('--data', type=str, default='face_test')
+    parser.add_argument('--model', type=str, default='dcgan')
     parser.add_argument('--gpus', type=str, default='0')
     args = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus

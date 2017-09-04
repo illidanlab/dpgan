@@ -104,14 +104,12 @@ def loaddata_face(path, batch_size):
         # image_n.append(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))) # image is averaged
     image_n = asarray(image_n)
     res = image_n[random.choice(len(image_n), batch_size)]
-    res = res.reshape((batch_size, 784))
-    print res.shape
+    res = res.reshape((batch_size, 784)) # type(res[0][0]): numpy.float64
     return res
 
-# path = "./face/CelebA/img_align_celeba_10000_1st_r/"
+# path = "./face/CelebA/img_align_celeba_10000_1st_r_28/"
 # batch_size = 2
 # im = loaddata_face(path, batch_size)
-# print im
 
 # load data and labels into matrix of specific digit
 def loaddata(digits, dataset='training',
