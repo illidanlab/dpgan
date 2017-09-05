@@ -1,6 +1,8 @@
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets('./face_test/MNIST')
+from utilize import loaddata_face
+
+
+path = "./face_test/CelebA/img_align_celeba_10000_1st_r_28/"
 
 
 
@@ -9,7 +11,7 @@ class DataSampler(object):
         self.shape = [28, 28, 1]
 
     def __call__(self, batch_size): # __call__ method is executed when the instance is called
-        return mnist.train.next_batch(batch_size)
+        return loaddata_face(path, batch_size) # loaddata_face(path, batch_size).shape: (batch_size, 784) or (batch_size, 32, 32, 1)
 
 
     def data2img(self, data):

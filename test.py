@@ -14,7 +14,7 @@ from tensorflow.contrib.layers import batch_norm
 import matplotlib.gridspec as gridspec
 import sys, time, argparse
 import tensorflow as tf
-from utilize import normlization, loaddata_face
+from utilize import normlization, loaddata_face, loaddata_face_batch
 import csv
 from heapq import nsmallest
 # from sklearn import linear_model
@@ -23,6 +23,8 @@ import scipy.misc
 from resizeimage import resizeimage
 from face.dcgan import Generator
 from tensorflow.examples.tutorials.mnist import input_data
+
+
 
 
 '''
@@ -69,6 +71,7 @@ r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
 r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11]]])
+a = array([[1],[4]])
 
 
 # a test on Generator in dcgan.py in face folder

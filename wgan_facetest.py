@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 import cPickle as pickle
 from numpy import linalg, argmin, array, amax, arange
 import matplotlib.gridspec as gridspec
-from utilize import normlization, loaddata
+from utilize import normlization, loaddata, loaddata_face, loaddata_face_batch
 import logging # these 2 lines ar used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -17,7 +17,7 @@ from visualize import *
 
 
 class WassersteinGAN(object):
-    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, batch_size=64): # changed
+    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, path = "./face_test/CelebA/img_align_celeba_10000_1st_r_28/", batch_size=64): # changed
         self.model = model
         self.data = data
         self.g_net = g_net
@@ -26,6 +26,7 @@ class WassersteinGAN(object):
         self.z_sampler = z_sampler
         self.x_dim = self.d_net.x_dim
         self.z_dim = self.g_net.z_dim
+        self.path = path
         self.x = tf.placeholder(tf.float32, [None, self.x_dim], name='x') # [None, 784]
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
         self.x_ = self.g_net(self.z)
@@ -71,6 +72,7 @@ class WassersteinGAN(object):
     def train(self, batch_size=64, num_batches=200000):
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
+        im = loaddata_face(self.path) # load whole CelebA dataset
         start_time = time.time()
         for t in range(0, num_batches):
             d_iters = 5
@@ -78,8 +80,7 @@ class WassersteinGAN(object):
                  d_iters = 100
 
             for _ in range(0, d_iters): # train discriminator
-                print "we need to print out something"
-                data_td, label_td = self.x_sampler(batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
+                data_td = loaddata_face_batch(im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_clip)
                 self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
@@ -89,7 +90,7 @@ class WassersteinGAN(object):
             self.sess.run(self.g_rmsprop, feed_dict={self.z: bz, self.x: data_td})
 
             if t % 100 == 0: # evaluate loss and norm of gradient vector
-                bx,l = self.x_sampler(batch_size) # the reason we generate another batch of sample is that we want to see if the distance of 2 distributions are indeed pulled closer
+                bx = loaddata_face_batch(im, batch_size) # the reason we generate another batch of sample is that we want to see if the distance of 2 distributions are indeed pulled closer
                 bz = self.z_sampler(batch_size, self.z_dim)
 
                 rd_loss = self.sess.run(
@@ -126,7 +127,7 @@ class WassersteinGAN(object):
         N = 20 # generate images from generator, after finish training
         z_sample = self.z_sampler(N, self.z_dim)
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample}) # type(x_gene): <type 'numpy.ndarray'>, x_gene[0].shape: (784,)
-        MNIST_data, MNIST_labels = loaddata('0123456789', 'training', r'./face_test/MNIST')  # # load whole training set of MNIST database
+        MNIST_data, MNIST_labels = loaddata('0123456789', 'training', self.path)  # # load whole training set of MNIST database
         MNIST_data_n = [] # normlized (/255)
         for i in range(len(MNIST_data)):
             MNIST_data_n.append(normlization(MNIST_data[i]))
