@@ -7,7 +7,7 @@ import tensorflow.contrib as tc
 import matplotlib
 matplotlib.use('Agg')
 import cPickle as pickle
-from numpy import linalg, argmin, array, arange
+from numpy import linalg, argmin, array, arange, squeeze
 import matplotlib.gridspec as gridspec
 from utilize import loaddata_face, loaddata_face_batch
 import logging # these 2 lines ar used in GPU3
@@ -145,8 +145,8 @@ class WassersteinGAN(object):
             pickle.dump(x_training_data, fp)
         with open('./result/genefinalfig/norm_d_net_var_grad.pickle', 'wb') as fp:
             pickle.dump(self.norm_d_net_var_grad, fp)
-        x_gene = array(x_gene)
-        x_training_data = array(x_training_data)
+        x_gene = squeeze(array(x_gene)) # x_gene[i] shouldn't have the 3rd coordinate: channel
+        x_training_data = squeeze(array(x_training_data))
         plt.figure(figsize=(5, 60))
         G = gridspec.GridSpec(N, 1)
         for i in range(N):

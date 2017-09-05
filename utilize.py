@@ -99,8 +99,8 @@ def loaddata_face(path):
         jpgfile = Image.open(path + im_name[i])
         # print asarray(jpgfile.getdata(),dtype=float64).shape
         # print jpgfile.size
-        image_n[i] = im_avg(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))) # jpgfile.shape: , normalized
-        # image_n.append(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))) # image is averaged
+        image_n[i] = im_avg(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1]))))
+        # image_n[i] = normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1]))) # image is averaged
     return image_n
 
 # path = "./face/CelebA/img_align_celeba_10000_1st_r_28/"
@@ -109,7 +109,7 @@ def loaddata_face(path):
 def loaddata_face_batch(dataset, batch_size):
     '''random select batch from '''
     res = dataset[random.choice(len(dataset), batch_size)]
-    res = res.reshape((batch_size, 784))  # type(res[0][0]): numpy.float64
+    # res = res.reshape((batch_size, 784))  # type(res[0][0]): numpy.float64
     return res
 
 # batch_size = 2

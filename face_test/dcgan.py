@@ -85,7 +85,7 @@ class Generator(object):
                 weights_regularizer=tc.layers.l2_regularizer(2.5e-5),
                 activation_fn=tf.sigmoid
             ) # output shape: [bs, 28, 28, 1]
-            conv2 = tf.reshape(conv2, tf.stack([bs, 784]))
+            conv2 = tf.reshape(conv2, tf.stack([bs, 28, 28, 1]))
             return conv2
 
     @property
