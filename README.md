@@ -2,12 +2,10 @@
 
 Tensorflow implementation of Wasserstein GAN.
 
-Two versions:
-- wgan.py: the original clipping method.
-- wgan_v2.py: the gradient penalty method. (Improved Training of Wasserstein GANs).
-
 How to run (an example):
 
-```
-python wgan_v2.py --data mnist --model mlp --gpus 0
-```
+MNIST data:
+python wgan.py --data mnist --model mlp --gpus 0
+
+CelebA data:
+python wgan_facetest.py --data face_test --model dcgan --gpus 0
