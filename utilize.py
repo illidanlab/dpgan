@@ -115,25 +115,6 @@ def loaddata_face_batch(dataset, batch_size):
 # batch_size = 2
 # res = loaddata_face_batch(im, batch_size)
 
-# # original backup
-# def loaddata_face(path, batch_size):
-#     # for file in os.listdir(path):
-#     #     print file
-#     im_name = array([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
-#     N = len(im_name) # count files in directory, the file names in original total: "000001.jpg" to "202599.jpg"
-#     # N = 10 # for test use
-#     image_n = [] # normalized image
-#     for i in range(N):
-#         jpgfile = Image.open(path + im_name[i])
-#         # print asarray(jpgfile.getdata(),dtype=float64).shape
-#         # print jpgfile.size
-#         image_n.append(im_avg(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1]))))) # jpgfile.shape: , normalized
-#         # image_n.append(normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))) # image is averaged
-#     image_n = asarray(image_n)
-#     res = image_n[random.choice(len(image_n), batch_size)]
-#     res = res.reshape((batch_size, 784)) # type(res[0][0]): numpy.float64
-#     return res
-
 # load data and labels into matrix of specific digit
 def loaddata(digits, dataset='training',
              path='.'):  # digits should among 0-9, dataset should be 'training' or 'testing', path is where you store your dataset file
