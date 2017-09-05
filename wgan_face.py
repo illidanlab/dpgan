@@ -87,9 +87,7 @@ class WassersteinGAN(object):
                 data_td = self.x_sampler(batch_size) # data_td: data for training discriminator, data_td.shape: (64, 32, 32, 1)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_clip)
-                print "Before optimization!"
                 self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
-                print "After optimization!"
                 # self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
 
             bz = self.z_sampler(batch_size, self.z_dim) # train generator, another batch of z sample

@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 import cPickle as pickle
 from numpy import linalg, argmin, array, amax, arange
 import matplotlib.gridspec as gridspec
-from utilize import normlization, loaddata, loaddata_face, loaddata_face_batch
+from utilize import normlization, loaddata_face, loaddata_face_batch
 import logging # these 2 lines ar used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -124,55 +124,42 @@ class WassersteinGAN(object):
                 save_path = saver.save(self.sess, "result/sesssave/sess.ckpt")
                 print("Session saved in file: %s" % save_path)
 
-        N = 20 # generate images from generator, after finish training
+        N = 10 # generate images from generator, after finish training
         z_sample = self.z_sampler(N, self.z_dim)
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample}) # type(x_gene): <type 'numpy.ndarray'>, x_gene[0].shape: (784,)
-        MNIST_data, MNIST_labels = loaddata('0123456789', 'training', self.path)  # # load whole training set of MNIST database
-        MNIST_data_n = [] # normlized (/255)
-        for i in range(len(MNIST_data)):
-            MNIST_data_n.append(normlization(MNIST_data[i]))
-        MNIST_data_n = array(MNIST_data_n)
-        x_training_data = []  # corresponding nearest training points in whole MNIST
-        x_training_label = []  # corresponding nearest training points' labels
+        face_data = loaddata_face(self.path, len([name for name in os.listdir(self.path) if os.path.isfile(os.path.join(self.path, name))]))
+        face_data_n = array(face_data) # face_data is already normlized (/255)
+        x_training_data = []  # corresponding nearest training points in whole face data
         for i in range(N):
-            x_ind = self.find(x_gene[i], MNIST_data_n) # find the nearest training point for each generated data point in whole MNIST
-            x_training_data.append(MNIST_data_n[x_ind])
-            x_training_label.append(MNIST_labels[x_ind])
+            x_ind = self.find(x_gene[i], face_data_n) # find the nearest training point for each generated data point in whole face data
+            x_training_data.append(face_data_n[x_ind])
 
         x_gene = x_gene.tolist() # all to list type
         x_training_data = [i.tolist() for i in x_training_data]
         # sort x_gene, x_training_data by sorting x_training_label
-        x_gene = [x for (y, x) in sorted(zip(x_training_label, x_gene))]
-        x_training_data = [x for (y, x) in sorted(zip(x_training_label, x_training_data))]
 
         # store generated data, nearest data (label) and figures
         with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
         with open('./result/genefinalfig/x_training_data.pickle', 'wb') as fp:
             pickle.dump(x_training_data, fp)
-        with open('./result/genefinalfig/x_training_label.pickle', 'wb') as fp:
-            pickle.dump(sorted(x_training_label), fp)
         with open('./result/genefinalfig/norm_d_net_var_grad.pickle', 'wb') as fp:
             pickle.dump(self.norm_d_net_var_grad, fp)
-        # with open('/home/decs/2017-DPGAN/result/07242017EXP1non/genefinalfig/x_gene.pickle', 'rb') as fp:
-        #     data = pickle.load(fp)
-        x_gene = array(x_gene)*255 # to 0-255 scale
-        x_training_data = array(x_training_data)*255
+        x_gene = array(x_gene) * 255  # to 0-255 scale, rbg image
+        x_training_data = array(x_training_data) * 255
         plt.figure(figsize=(5, 60))
         G = gridspec.GridSpec(N, 1)
         for i in range(N):
-            g = x_gene[i].reshape((28, 28))
             plt.subplot(G[i, :])
-            plt.imshow(g, interpolation='nearest', cmap='gray')
+            plt.imshow(x_gene[i], interpolation='nearest')
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
         plt.savefig('./result/genefinalfig/x_gene.png')
         plt.clf()
         for i in range(N):
-            g = x_training_data[i].reshape((28, 28))
             plt.subplot(G[i, :])
-            plt.imshow(g, interpolation='nearest', cmap='gray')
+            plt.imshow(x_training_data[i], interpolation='nearest')
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
@@ -186,8 +173,8 @@ class WassersteinGAN(object):
     def dpnoise(self, tensor, batch_size):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
-        sigma = 0.000005  # assign it manually
-        cg = 100000.0
+        sigma = 0.00001  # assign it manually
+        cg = 160000.0
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batch_size), rt))
         return t
@@ -200,22 +187,22 @@ class WassersteinGAN(object):
         plt.plot(t, self.g_loss_store, 'b--')
         plt.xlabel('Generator iterations (*10^{2})')
         plt.ylabel('Generator loss')
-        plt.savefig('result/lossfig/gloss.jpg')
+        plt.savefig('./result/lossfig/gloss.jpg')
         plt.clf()
         plt.plot(t, self.d_loss_store, 'b--')
         plt.xlabel('Generator iterations (*10^{2})')
         plt.ylabel('Discriminator loss')
-        plt.savefig('result/lossfig/dloss.jpg')
+        plt.savefig('./result/lossfig/dloss.jpg')
         plt.clf()
         plt.plot(t, self.wdis_store, 'b--')
         plt.xlabel('Generator iterations (*10^{2})')
         plt.ylabel('Wasserstein distance')
-        plt.savefig('result/lossfig/wdis.jpg')
+        plt.savefig('./result/lossfig/wdis.jpg')
         plt.clf()
         plt.plot(t, self.norm_d_net_var_grad, 'b--')
         plt.xlabel('Generator iterations (*10^{2})')
         plt.ylabel('Norm of gradient vector')
-        plt.savefig('result/lossfig/ngv.jpg')
+        plt.savefig('./result/lossfig/ngv.jpg')
         # store to file
         gpick = file("result/lossfile/gloss.pckl", "w")
         pickle.dump(self.g_loss_store, gpick)
@@ -238,14 +225,6 @@ class WassersteinGAN(object):
 
     def norm_w(self, v):
         return sum([linalg.norm(i) for i in v])
-
-    def scale_transform(self, image):
-        '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''
-        im = array(image)
-        Max = amax(im)
-        for i in range(len(im)):
-            im[i] = (im[i] / Max) * 255
-        return im
 
 
 if __name__ == '__main__':

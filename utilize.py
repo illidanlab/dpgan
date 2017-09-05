@@ -94,7 +94,6 @@ def loaddata_face(path):
     #     print file
     im_name = array([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
     N = len(im_name) # count files in directory, the file names in original total: "000001.jpg" to "202599.jpg"
-    # N = 10 # for test use
     image_n = zeros(shape=(N,28,28,1)) # normalized image
     for i in range(N):
         jpgfile = Image.open(path + im_name[i])
@@ -111,7 +110,6 @@ def loaddata_face_batch(dataset, batch_size):
     '''random select batch from '''
     res = dataset[random.choice(len(dataset), batch_size)]
     res = res.reshape((batch_size, 784))  # type(res[0][0]): numpy.float64
-    print res.shape
     return res
 
 # batch_size = 2

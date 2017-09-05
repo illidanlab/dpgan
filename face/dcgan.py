@@ -3,7 +3,7 @@ import tensorflow.contrib as tc
 import tensorflow.contrib.layers as tcl
 
 
-def leaky_relu(x, alpha=0.1):
+def leaky_relu(x, alpha=0.2):
     return tf.maximum(tf.minimum(0.0, alpha * x), x) # this is equivalent to: x \leq 0: \alpha x, x > 0: x, here \alpha \leq 1
 
 

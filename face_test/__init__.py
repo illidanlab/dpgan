@@ -10,8 +10,8 @@ class DataSampler(object):
     def __init__(self):
         self.shape = [28, 28, 1]
 
-    def __call__(self, batch_size): # __call__ method is executed when the instance is called
-        return loaddata_face(path, batch_size) # loaddata_face(path, batch_size).shape: (batch_size, 784) or (batch_size, 32, 32, 1)
+    def __call__(self, batch_size):
+        return loaddata_face(path, batch_size) # no longer use this due to speed reason
 
 
     def data2img(self, data):
