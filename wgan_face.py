@@ -141,7 +141,6 @@ class WassersteinGAN(object):
 
         x_gene = x_gene.tolist() # all to list type
         x_training_data = [i.tolist() for i in x_training_data]
-        # sort x_gene, x_training_data by sorting x_training_label
 
         # store generated data, nearest data (label) and figures
         with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp:

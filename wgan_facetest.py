@@ -7,9 +7,9 @@ import tensorflow.contrib as tc
 import matplotlib
 matplotlib.use('Agg')
 import cPickle as pickle
-from numpy import linalg, argmin, array, amax, arange
+from numpy import linalg, argmin, array, arange
 import matplotlib.gridspec as gridspec
-from utilize import normlization, loaddata_face, loaddata_face_batch
+from utilize import loaddata_face, loaddata_face_batch
 import logging # these 2 lines ar used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -27,8 +27,9 @@ class WassersteinGAN(object):
         self.x_dim = self.d_net.x_dim
         self.z_dim = self.g_net.z_dim
         self.path = path
-        self.x = tf.placeholder(tf.float32, [None, self.x_dim], name='x') # [None, 784]
+        self.x = tf.placeholder(tf.float32, [None] + self.x_dim, name='x')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
+
         self.x_ = self.g_net(self.z)
 
         self.d = self.d_net(self.x, reuse=False)
@@ -78,6 +79,7 @@ class WassersteinGAN(object):
             d_iters = 5
             if t % 500 == 0 or t < 25: # make the discriminator more accurate at certain iterations
                  d_iters = 100
+
             for _ in range(0, d_iters): # train discriminator
                 data_td = loaddata_face_batch(im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
@@ -126,7 +128,6 @@ class WassersteinGAN(object):
         N = 10 # generate images from generator, after finish training
         z_sample = self.z_sampler(N, self.z_dim)
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample}) # type(x_gene): <type 'numpy.ndarray'>, x_gene[0].shape: (784,)
-        print "something change"
         im = loaddata_face(self.path)
         face_data = loaddata_face_batch(im, len([name for name in os.listdir(self.path) if os.path.isfile(os.path.join(self.path, name))])) # load whole data set, face_data is already normlized (/255)
         x_training_data = []  # corresponding nearest training points in whole face data
@@ -136,34 +137,33 @@ class WassersteinGAN(object):
 
         x_gene = x_gene.tolist() # all to list type
         x_training_data = [i.tolist() for i in x_training_data]
-        # sort x_gene, x_training_data by sorting x_training_label
 
-        # # store generated data, nearest data (label) and figures
-        # with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp:
-        #     pickle.dump(x_gene, fp)
-        # with open('./result/genefinalfig/x_training_data.pickle', 'wb') as fp:
-        #     pickle.dump(x_training_data, fp)
-        # with open('./result/genefinalfig/norm_d_net_var_grad.pickle', 'wb') as fp:
-        #     pickle.dump(self.norm_d_net_var_grad, fp)
-        # x_gene = array(x_gene) * 255  # to 0-255 scale, rbg image
-        # x_training_data = array(x_training_data) * 255
-        # plt.figure(figsize=(5, 60))
-        # G = gridspec.GridSpec(N, 1)
-        # for i in range(N):
-        #     plt.subplot(G[i, :])
-        #     plt.imshow(x_gene[i], interpolation='nearest')
-        #     plt.xticks(())
-        #     plt.yticks(())
-        # plt.tight_layout()
-        # plt.savefig('./result/genefinalfig/x_gene.png')
-        # plt.clf()
-        # for i in range(N):
-        #     plt.subplot(G[i, :])
-        #     plt.imshow(x_training_data[i], interpolation='nearest')
-        #     plt.xticks(())
-        #     plt.yticks(())
-        # plt.tight_layout()
-        # plt.savefig('./result/genefinalfig/x_training_data.png')
+        # store generated data, nearest data (label) and figures
+        with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp:
+            pickle.dump(x_gene, fp)
+        with open('./result/genefinalfig/x_training_data.pickle', 'wb') as fp:
+            pickle.dump(x_training_data, fp)
+        with open('./result/genefinalfig/norm_d_net_var_grad.pickle', 'wb') as fp:
+            pickle.dump(self.norm_d_net_var_grad, fp)
+        x_gene = array(x_gene)
+        x_training_data = array(x_training_data)
+        plt.figure(figsize=(5, 60))
+        G = gridspec.GridSpec(N, 1)
+        for i in range(N):
+            plt.subplot(G[i, :])
+            plt.imshow(x_gene[i], interpolation='nearest')
+            plt.xticks(())
+            plt.yticks(())
+        plt.tight_layout()
+        plt.savefig('./result/genefinalfig/x_gene.png')
+        plt.clf()
+        for i in range(N):
+            plt.subplot(G[i, :])
+            plt.imshow(x_training_data[i], interpolation='nearest')
+            plt.xticks(())
+            plt.yticks(())
+        plt.tight_layout()
+        plt.savefig('./result/genefinalfig/x_training_data.png')
 
         # store generator and discriminator
         saver = tf.train.Saver()

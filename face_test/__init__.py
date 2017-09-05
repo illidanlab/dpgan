@@ -1,7 +1,7 @@
 import numpy as np
 from utilize import loaddata_face
 
- 
+
 path = "./face_test/CelebA/img_align_celeba_10000_1st_r_28/"
 
 

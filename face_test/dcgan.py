@@ -9,17 +9,17 @@ def leaky_relu(x, alpha=0.2):
 
 class Discriminator(object):
     def __init__(self):
-        self.x_dim = 784
+        self.x_dim = [28, 28, 1]
         self.name = 'face_test/dcgan/d_net'
 
     def __call__(self, x, reuse=True):
         with tf.variable_scope(self.name) as vs:
             if reuse:
                 vs.reuse_variables()
-            bs = tf.shape(x)[0]
+            bs = tf.shape(x)[0] # batch size
             x = tf.reshape(x, [bs, 28, 28, 1])
             conv1 = tc.layers.convolution2d(
-                x, 64, [4, 4], [2, 2],
+                x, 64, [4, 4], [2, 2], # 64: number of output filters, [4, 4]: spatial dimensions of of the filters, [2, 2]: stride
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 activation_fn=tf.identity
             ) # output shape: [bs, 14, 14, 64], the padding in this layer is P = 1
@@ -48,7 +48,7 @@ class Discriminator(object):
 class Generator(object):
     def __init__(self):
         self.z_dim = 100
-        self.x_dim = 784
+        self.x_dim = [28, 28, 1]
         self.name = 'face_test/dcgan/g_net'
 
     def __call__(self, z):
