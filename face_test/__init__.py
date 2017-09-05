@@ -8,7 +8,7 @@ path = "./face_test/CelebA/img_align_celeba_10000_1st_r_28/"
 
 class DataSampler(object):
     def __init__(self):
-        self.shape = [28, 28, 1]
+        self.shape = [28, 28, 3]
 
     def __call__(self, batch_size):
         return loaddata_face(path, batch_size) # no longer use this due to speed reason

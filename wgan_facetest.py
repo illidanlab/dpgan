@@ -145,8 +145,8 @@ class WassersteinGAN(object):
             pickle.dump(x_training_data, fp)
         with open('./result/genefinalfig/norm_d_net_var_grad.pickle', 'wb') as fp:
             pickle.dump(self.norm_d_net_var_grad, fp)
-        x_gene = squeeze(array(x_gene)) # x_gene[i] shouldn't have the 3rd coordinate: channel
-        x_training_data = squeeze(array(x_training_data))
+        x_gene = array(x_gene) # x_gene[i] shouldn't have the 3rd coordinate: channel
+        x_training_data = array(x_training_data)
         plt.figure(figsize=(5, 60))
         G = gridspec.GridSpec(N, 1)
         for i in range(N):
@@ -155,7 +155,7 @@ class WassersteinGAN(object):
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
-        plt.savefig('./result/genefinalfig/x_gene.png')
+        plt.savefig('./result/genefinalfig/x_gene.jpg')
         plt.clf()
         for i in range(N):
             plt.subplot(G[i, :])
@@ -163,7 +163,7 @@ class WassersteinGAN(object):
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
-        plt.savefig('./result/genefinalfig/x_training_data.png')
+        plt.savefig('./result/genefinalfig/x_training_data.jpg')
 
         # store generator and discriminator
         saver = tf.train.Saver()

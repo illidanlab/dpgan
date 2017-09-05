@@ -24,9 +24,14 @@ from resizeimage import resizeimage
 from face.dcgan import Generator
 from tensorflow.examples.tutorials.mnist import input_data
 
-
-
-
+# read a rgb from .pickle and display
+with open('/home/decs/2017-DPGAN/code/wgan/result/genefinalfig/x_training_data.pickle', 'rb') as fp:
+    x_training_data = array(pickle.load(fp))
+print x_training_data[0].shape
+plt.imshow(x_training_data[0], interpolation='nearest')
+plt.xticks(())
+plt.yticks(())
+plt.show()
 
 '''
 #icd9_groups.pkl: type: list, len: 942, type of each: unicode
