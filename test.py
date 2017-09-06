@@ -24,14 +24,23 @@ from resizeimage import resizeimage
 from face.dcgan import Generator
 from tensorflow.examples.tutorials.mnist import input_data
 
-# read a rgb from .pickle and display
-with open('/home/decs/2017-DPGAN/code/wgan/result/genefinalfig/x_training_data.pickle', 'rb') as fp:
-    x_training_data = array(pickle.load(fp))
-print x_training_data[0].shape
-plt.imshow(x_training_data[0], interpolation='nearest')
-plt.xticks(())
-plt.yticks(())
-plt.show()
+# resize rgb image, see "https://pypi.python.org/pypi/python-resize-image"->"resize_cover(image, size, validate=True)"
+paths = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st/"
+pathd = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st_r_64/"
+im_name = [name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))]
+N = len(im_name)
+# N = 3 # for test use
+print N
+for i in range(N):
+    if i % 100 == 0:
+        print i
+    fd_img = open(paths + im_name[i], 'r')
+    img = Image.open(fd_img)
+    img = resizeimage.resize_cover(img, [64, 64, 3])
+    # print asarray(img.getdata(),dtype=float64).shape
+    # print img.size
+    img.save(pathd + im_name[i], img.format)
+fd_img.close()
 
 '''
 #icd9_groups.pkl: type: list, len: 942, type of each: unicode
@@ -79,16 +88,6 @@ te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0
 r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11]]])
 a = array([[1],[4]])
 
-
-# a test on Generator in dcgan.py in face folder
-g_net = Generator()
-z = tf.placeholder(tf.float32, [None, g_net.z_dim], name='z')
-z_feed = random.uniform(-1.0, 1.0, [3, g_net.z_dim])
-x_ = g_net(z)
-with tf.Session() as sess:
-    sess.run(tf.initialize_all_variables())
-    print g_net.vars
-    print sess.run(x_, feed_dict={z:z_feed})
 
 # move (not copy) 1 out of r files from paths to pathd
 paths = "/home/decs/2017-DPGAN/data/img_align_celeba/"
@@ -224,6 +223,45 @@ for i in range(N):
     # print img.size
     img.save(pathd + im_name[i], img.format)
 fd_img.close()
+
+# move (not copy) 1 out of r files from paths to pathd
+paths = "/home/decs/2017-DPGAN/data/img_align_celeba/"
+pathd = "/home/decs/2017-DPGAN/data/img_align_celeba_5/"
+r = 5.0
+N = int(round(len([name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))])/r)) # count files in directory and select 1 out of 10 of them, total: "000001.jpg" to "202599.jpg"
+M = 6 # the total number of digit to represent a image
+print N
+for i in range(1,N+1):
+    s = '0'*(M-len(str(i)))
+    file = paths + s + str(i) + ".jpg"
+    # print file
+    shutil.move(file, pathd)
+
+# randomly select from numpy array
+r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11]]])
+n = random.choice(len(r), 2)
+print type(r[n])
+
+
+# read a rgb from .pickle and display
+with open('/home/decs/2017-DPGAN/code/wgan/result/genefinalfig/x_training_data.pickle', 'rb') as fp:
+    x_training_data = array(pickle.load(fp))
+print x_training_data[0].shape
+plt.imshow(x_training_data[0], interpolation='nearest')
+plt.xticks(())
+plt.yticks(())
+plt.show()
+
+# a test on Generator in dcgan.py in face folder
+g_net = Generator()
+z = tf.placeholder(tf.float32, [None, g_net.z_dim], name='z')
+z_feed = random.uniform(-1.0, 1.0, [3, g_net.z_dim])
+x_ = g_net(z)
+with tf.Session() as sess:
+    sess.run(tf.initialize_all_variables())
+    print g_net.vars
+    print sess.run(x_, feed_dict={z:z_feed})
+
 
 my_const = tf.constant([1.0, 2.0], name="my_const")
 print tf.get_default_graph().as_graph_def()

@@ -9,7 +9,7 @@ def leaky_relu(x, alpha=0.2):
 
 class Discriminator(object):
     def __init__(self):
-        self.x_dim = [28, 28, 3]
+        self.x_dim = [64, 64, 3]
         self.name = 'face_test/dcgan/d_net'
 
     def __call__(self, x, reuse=True):
@@ -17,18 +17,18 @@ class Discriminator(object):
             if reuse:
                 vs.reuse_variables()
             bs = tf.shape(x)[0] # batch size
-            x = tf.reshape(x, [bs, 28, 28, 3])
+            x = tf.reshape(x, [bs, 64, 64, 3])
             conv1 = tc.layers.convolution2d(
                 x, 64, [4, 4], [2, 2], # 64: number of output filters, [4, 4]: spatial dimensions of of the filters, [2, 2]: stride
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 activation_fn=tf.identity
-            ) # output shape: [bs, 14, 14, 64], the padding in this layer is P = 1
+            ) # output shape: (64*64 image): [bs, 32, 32, 64], P = 1; (28*28 image): [bs, 14, 14, 64], P = 1; (128*128 image): [bs, 64, 64, 64], P = 1
             conv1 = leaky_relu(conv1)
             conv2 = tc.layers.convolution2d(
                 conv1, 128, [4, 4], [2, 2],
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 activation_fn=tf.identity
-            ) # output shape: [bs, 7, 7, 128], the padding in this layer is P = 0
+            ) # output shape (64*64 image): [bs, 16, 16, 128], P = 1; (28*28 image): [bs, 7, 7, 128], P = 0,  (128*128 image): [bs, 32, 32, 128], P = 1
             conv2 = leaky_relu(conv2)
             conv2 = tcl.flatten(conv2)
             fc1 = tc.layers.fully_connected(
@@ -48,7 +48,7 @@ class Discriminator(object):
 class Generator(object):
     def __init__(self):
         self.z_dim = 100
-        self.x_dim = [28, 28, 3]
+        self.x_dim = [64, 64, 3]
         self.name = 'face_test/dcgan/g_net'
 
     def __call__(self, z):
@@ -63,12 +63,12 @@ class Generator(object):
             fc1 = tc.layers.batch_norm(fc1)
             fc1 = tf.nn.relu(fc1)
             fc2 = tc.layers.fully_connected(
-                fc1, 7 * 7 * 128,
+                fc1, 16 * 16 * 128,
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 weights_regularizer=tc.layers.l2_regularizer(2.5e-5),
                 activation_fn=tf.identity
             )
-            fc2 = tf.reshape(fc2, tf.stack([bs, 7, 7, 128]))
+            fc2 = tf.reshape(fc2, tf.stack([bs, 16, 16, 128]))
             fc2 = tc.layers.batch_norm(fc2)
             fc2 = tf.nn.relu(fc2)
             conv1 = tc.layers.convolution2d_transpose(
@@ -76,7 +76,7 @@ class Generator(object):
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 weights_regularizer=tc.layers.l2_regularizer(2.5e-5),
                 activation_fn=tf.identity
-            ) # output shape: [bs, 14, 14, 64]
+            )
             conv1 = tc.layers.batch_norm(conv1)
             conv1 = tf.nn.relu(conv1)
             conv2 = tc.layers.convolution2d_transpose(
@@ -84,8 +84,8 @@ class Generator(object):
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 weights_regularizer=tc.layers.l2_regularizer(2.5e-5),
                 activation_fn=tf.sigmoid
-            ) # output shape: [bs, 28, 28, 1]
-            conv2 = tf.reshape(conv2, tf.stack([bs, 28, 28, 3]))
+            )
+            conv2 = tf.reshape(conv2, tf.stack([bs, 64, 64, 3]))
             return conv2
 
     @property
