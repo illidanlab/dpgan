@@ -21,26 +21,10 @@ from heapq import nsmallest
 import shutil
 import scipy.misc
 from resizeimage import resizeimage
-from face.dcgan import Generator
 from tensorflow.examples.tutorials.mnist import input_data
 
-# resize rgb image, see "https://pypi.python.org/pypi/python-resize-image"->"resize_cover(image, size, validate=True)"
-paths = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st/"
-pathd = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st_r_64/"
-im_name = [name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))]
-N = len(im_name)
-# N = 3 # for test use
-print N
-for i in range(N):
-    if i % 100 == 0:
-        print i
-    fd_img = open(paths + im_name[i], 'r')
-    img = Image.open(fd_img)
-    img = resizeimage.resize_cover(img, [64, 64, 3])
-    # print asarray(img.getdata(),dtype=float64).shape
-    # print img.size
-    img.save(pathd + im_name[i], img.format)
-fd_img.close()
+
+
 
 '''
 #icd9_groups.pkl: type: list, len: 942, type of each: unicode
@@ -211,7 +195,6 @@ paths = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st/"
 pathd = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st_r/"
 im_name = [name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))]
 N = len(im_name)
-# N = 3 # for test use
 print N
 for i in range(N):
     if i % 100 == 0:

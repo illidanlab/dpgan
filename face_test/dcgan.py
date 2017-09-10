@@ -9,7 +9,7 @@ def leaky_relu(x, alpha=0.2):
 
 class Discriminator(object):
     def __init__(self):
-        self.x_dim = [64, 64, 3]
+        self.x_dim = [64, 64, 1]
         self.name = 'face_test/dcgan/d_net'
 
     def __call__(self, x, reuse=True):
@@ -17,7 +17,7 @@ class Discriminator(object):
             if reuse:
                 vs.reuse_variables()
             bs = tf.shape(x)[0] # batch size
-            x = tf.reshape(x, [bs, 64, 64, 3])
+            x = tf.reshape(x, [bs, 64, 64, 1])
             conv1 = tc.layers.convolution2d(
                 x, 64, [4, 4], [2, 2], # 64: number of output filters, [4, 4]: spatial dimensions of of the filters, [2, 2]: stride
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
@@ -48,7 +48,7 @@ class Discriminator(object):
 class Generator(object):
     def __init__(self):
         self.z_dim = 100
-        self.x_dim = [64, 64, 3]
+        self.x_dim = [64, 64, 1]
         self.name = 'face_test/dcgan/g_net'
 
     def __call__(self, z):
@@ -80,12 +80,12 @@ class Generator(object):
             conv1 = tc.layers.batch_norm(conv1)
             conv1 = tf.nn.relu(conv1)
             conv2 = tc.layers.convolution2d_transpose(
-                conv1, 3, [4, 4], [2, 2],
+                conv1, 1, [4, 4], [2, 2],
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 weights_regularizer=tc.layers.l2_regularizer(2.5e-5),
                 activation_fn=tf.sigmoid
             )
-            conv2 = tf.reshape(conv2, tf.stack([bs, 64, 64, 3]))
+            conv2 = tf.reshape(conv2, tf.stack([bs, 64, 64, 1]))
             return conv2
 
     @property

@@ -17,7 +17,7 @@ from visualize import *
 
 
 class WassersteinGAN(object):
-    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, path = "./face_test/CelebA/img_align_celeba_10000_1st_r_64/", batch_size=64): # changed
+    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, path = "./face_test/CelebA/img_align_celeba_50k_1st_r_64_64_1/", batch_size=64): # changed
         self.model = model
         self.data = data
         self.g_net = g_net
@@ -70,7 +70,7 @@ class WassersteinGAN(object):
         self.d_loss_store = [] # store loss of discriminator
         self.wdis_store = []  # store Wasserstein distance, new added
 
-    def train(self, batch_size=64, num_batches=100000):
+    def train(self, batch_size=64, num_batches=200000):
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
         im = loaddata_face(self.path) # load whole CelebA dataset
@@ -81,7 +81,6 @@ class WassersteinGAN(object):
                  d_iters = 100
 
             for _ in range(0, d_iters): # train discriminator
-                print "we need to print out something"
                 data_td = loaddata_face_batch(im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_clip)
@@ -112,19 +111,19 @@ class WassersteinGAN(object):
                 self.g_loss_store.append(rg_loss)  # g_loss will decrease, here is not self.g_loss nor self.g_loss_reg
                 self.d_loss_store.append(rd_loss)  # d_loss will increase
                 self.wdis_store.append(rd_loss)  # Wasserstein distance will decrease
-
-            if t % 1000 == 0: # generate image
-                bz = self.z_sampler(1, self.z_dim) # changed, only generate 1 image
-                bx = self.sess.run(self.x_, feed_dict={self.z: bz}) # bx.shape: (1, 784)
-                bx = xs.data2img(bx) # data2img is in __init__.py, bx.shape: (1, 28, 28, 1)
-                fig = plt.figure(self.data + '.' + self.model)
-                grid_show(fig, bx, xs.shape)
-                fig.savefig('result/genefig/{}/{}.jpg'.format(self.data, t)) # changed
-
-            if t % 100000 == 0:  # store generator and discriminator, new added
-                saver = tf.train.Saver()
-                save_path = saver.save(self.sess, "result/sesssave/sess.ckpt")
-                print("Session saved in file: %s" % save_path)
+            # comment this to speed up
+            # if t % 1000 == 0: # generate image
+            #     bz = self.z_sampler(1, self.z_dim) # changed, only generate 1 image
+            #     bx = self.sess.run(self.x_, feed_dict={self.z: bz}) # bx.shape: (1, 784)
+            #     bx = xs.data2img(bx) # data2img is in __init__.py, bx.shape: (1, 28, 28, 1)
+            #     fig = plt.figure(self.data + '.' + self.model)
+            #     grid_show(fig, bx, xs.shape)
+            #     fig.savefig('result/genefig/{}/{}.jpg'.format(self.data, t)) # changed
+            #
+            # if t % 100000 == 0:  # store generator and discriminator, new added
+            #     saver = tf.train.Saver()
+            #     save_path = saver.save(self.sess, "result/sesssave/sess.ckpt")
+            #     print("Session saved in file: %s" % save_path)
 
         N = 10 # generate images from generator, after finish training
         z_sample = self.z_sampler(N, self.z_dim)
@@ -152,7 +151,7 @@ class WassersteinGAN(object):
         G = gridspec.GridSpec(N, 1)
         for i in range(N):
             plt.subplot(G[i, :])
-            plt.imshow(x_gene[i], interpolation='nearest')
+            plt.imshow(squeeze(x_gene[i]), interpolation='nearest') # only accepted 2 dim to show image
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
@@ -160,7 +159,7 @@ class WassersteinGAN(object):
         plt.clf()
         for i in range(N):
             plt.subplot(G[i, :])
-            plt.imshow(x_training_data[i], interpolation='nearest')
+            plt.imshow(squeeze(x_training_data[i]), interpolation='nearest')
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
