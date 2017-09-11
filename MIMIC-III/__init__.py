@@ -1,18 +1,23 @@
 from numpy import random, clip
+from utilize import *
+
+
 
 class DataSampler(object):
     def __init__(self):
-        self.shape = [1, dim_data, 1]
+        self.MIMIC_data, self.num_data, self.dim_data = data_readf()
+        self.shape = [self.dim_data]
 
-    def __call__(self, batch_size, dataType): # __call__ method is called when the instance is called
-        indices = random.choice(num_data, batch_size, replace=False) # sample a batch data points (without repeat)
+    def __call__(self, batch_size, dataType):
+        indices = random.choice(self.num_data, batch_size, replace=False) # sample a batch data points (without repeat)
         if dataType == 'binary':
-            return clip(MIMIC_ICD9[indices], 0, 1) # no label
+            return clip(self.MIMIC_data[indices], 0, 1) # no label
         else:
-            return MIMIC_ICD9[indices]  # no label
+            return self.MIMIC_data[indices]  # no label
 
 
 class NoiseSampler(object):
     def __call__(self, batch_size, z_dim):
-        return random.uniform(-1.0, 1.0, [batch_size, z_dim]) # "changed"
+        return random.normal(size=(batch_size, z_dim)) # "changed"
         # the shape of return is: batch_size*z_dim
+        # see Medgan line 209, use np.random.normal(), which has defauld std = 1.0

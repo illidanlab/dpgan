@@ -14,7 +14,7 @@ from tensorflow.contrib.layers import batch_norm
 import matplotlib.gridspec as gridspec
 import sys, time, argparse
 import tensorflow as tf
-from utilize import normlization, loaddata_face, loaddata_face_batch
+from utilize import *
 import csv
 from heapq import nsmallest
 # from sklearn import linear_model
@@ -22,7 +22,6 @@ import shutil
 import scipy.misc
 from resizeimage import resizeimage
 from tensorflow.examples.tutorials.mnist import input_data
-
 
 
 

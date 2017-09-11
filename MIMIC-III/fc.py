@@ -1,11 +1,7 @@
 import tensorflow as tf
-import tensorflow.contrib as tc
 import tensorflow.contrib.layers as tcl
 from tensorflow.contrib.layers import batch_norm
-import matplotlib
 
-def leaky_relu(x, alpha=0.1):
-    return tf.maximum(tf.minimum(0.0, alpha * x), x) # this is equivalent to: x \leq 0: \alpha x, x > 0: x, here \alpha \leq 1
 
 class Autoencoder(object):
     def __init__(self, inputDim, l2scale, compressDims, aeActivation, decompressDims, dataType):
@@ -64,42 +60,8 @@ class Autoencoder(object):
         return [var for var in tf.global_variables() if self.name in var.name]
 
 
-class Discriminator(object):
-    def __init__(self, inputDim, discriminatorDims, discriminatorActivation):
-        self.inputDim = inputDim
-        self.discriminatorDims = discriminatorDims
-        self.discriminatorActivation = discriminatorActivation
-        self.name = 'mimiciii/fc/d_net'
-
-    def __call__(self, x_input, keepRate, reuse=True):
-        batchSize = tf.shape(x_input)[0]
-        inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input, 0), [batchSize]), (batchSize, self.inputDim))
-        tempVec = tf.concat(1, [x_input, inputMean])
-        tempDim = self.inputDim * 2
-        with tf.variable_scope(self.name, reuse=reuse, regularizer=tcl.l2_regularizer(self.l2scale)):
-            for i, discDim in enumerate(self.discriminatorDims[:-1]):
-                W = tf.get_variable('W_' + str(i), shape=[tempDim, discDim])
-                b = tf.get_variable('b_' + str(i), shape=[discDim])
-                h = self.discriminatorActivation(tf.add(tf.matmul(tempVec, W), b))
-                h = tf.nn.dropout(h, keepRate)
-                tempVec = h
-                tempDim = discDim
-            W = tf.get_variable('W', shape=[tempDim, 1])
-            b = tf.get_variable('b', shape=[1])
-            y_hat = tf.squeeze(tf.nn.sigmoid(tf.add(tf.matmul(tempVec, W), b)))
-
-        return y_hat
-
-    @property # decorator, a issue see: https://stackoverflow.com/questions/42817388/typeerror-list-object-is-not-callable-when-using-a-property
-    def vars(self):
-        return [var for var in tf.all_variables() if self.name in var.name] # string var.name contains substring self.name
-
-    def loss(self, prediction, target):
-        return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(prediction, target))
-
-
 class Generator(object):
-    def __init__(self, bn_train, randomDim, l2scale, generatorDims, generatorActivation, bnDecay, dataType):
+    def __init__(self, randomDim, l2scale, generatorDims, bn_train, generatorActivation, bnDecay, dataType):
         self.randomDim = randomDim
         self.l2scale = l2scale
         self.generatorDims = generatorDims
@@ -135,3 +97,69 @@ class Generator(object):
     @property
     def vars(self):
         return [var for var in tf.all_variables() if self.name in var.name]
+
+
+class Discriminator(object):
+    def __init__(self, inputDim, discriminatorDims, discriminatorActivation):
+        self.inputDim = inputDim
+        self.discriminatorDims = discriminatorDims
+        self.discriminatorActivation = discriminatorActivation
+        self.name = 'mimiciii/fc/d_net'
+
+    def __call__(self, x_input, keepRate, reuse=True):
+        batchSize = tf.shape(x_input)[0]
+        inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input, 0), [batchSize]), (batchSize, self.inputDim))
+        tempVec = tf.concat(1, [x_input, inputMean])
+        tempDim = self.inputDim * 2
+        with tf.variable_scope(self.name, reuse=reuse, regularizer=tcl.l2_regularizer(self.l2scale)):
+            for i, discDim in enumerate(self.discriminatorDims[:-1]):
+                W = tf.get_variable('W_' + str(i), shape=[tempDim, discDim])
+                b = tf.get_variable('b_' + str(i), shape=[discDim])
+                h = self.discriminatorActivation(tf.add(tf.matmul(tempVec, W), b))
+                h = tf.nn.dropout(h, keepRate)
+                tempVec = h
+                tempDim = discDim
+            W = tf.get_variable('W', shape=[tempDim, 1])
+            b = tf.get_variable('b', shape=[1])
+            y_hat = tf.squeeze(tf.nn.sigmoid(tf.add(tf.matmul(tempVec, W), b)))
+
+        return y_hat
+
+    @property # decorator, a issue see: https://stackoverflow.com/questions/42817388/typeerror-list-object-is-not-callable-when-using-a-property
+    def vars(self):
+        return [var for var in tf.all_variables() if self.name in var.name] # string var.name contains substring self.name
+
+    def loss(self, prediction, target):
+        return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(prediction, target))
+
+
+
+class buildDiscriminator(object):
+    '''Generated data need to go through a decoder before enter discriminator, real data enter discriminator directly'''
+    def __init__(self, inputDim, discriminatorDims, discriminatorActivation):
+        self.d = Discriminator(inputDim, discriminatorDims, discriminatorActivation) # it contains a discriminator
+        self.name = 'mimiciii/fc/build_d_net'
+
+    def __call__(self, x_real, x_fake, keepRate, decodeVariables, reuse=True):
+        y_hat_real = self.d(x_real, keepRate, reuse=False)
+        tempVec = self.x_
+        i = 0
+        for _ in self.decompressDims[:-1]:
+            tempVec = self.aeActivation(
+                tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]),
+                       self.decodeVariables['aed_b_' + str(i)]))
+            i += 1
+        if self.dataType == 'binary':
+            x_decoded = tf.nn.sigmoid(
+                tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]),
+                       self.decodeVariables['aed_b_' + str(i)]))
+        else:
+            x_decoded = tf.nn.relu(
+                tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]),
+                       self.decodeVariables['aed_b_' + str(i)]))
+        self.d_ = self.d_net(x_decoded)
+
+        self.g_loss = -tf.reduce_mean(self.d_)
+        self.d_loss = -tf.reduce_mean(self.d) + tf.reduce_mean(self.d_)
+
+        return y_hat

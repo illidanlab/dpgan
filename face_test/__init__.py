@@ -2,13 +2,13 @@ import numpy as np
 from utilize import loaddata_face
 
 
-path = "./face_test/CelebA/img_align_celeba_10000_1st_r_64/"
+path = "./face_test/CelebA/img_align_celeba_50k_1st_r_64_64_1/"
 
 
 
 class DataSampler(object):
     def __init__(self):
-        self.shape = [64, 64, 3]
+        self.shape = [64, 64, 1]
 
     def __call__(self, batch_size):
         return loaddata_face(path, batch_size) # no longer use this due to speed reason

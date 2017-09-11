@@ -46,18 +46,18 @@ class WassersteinGAN(object):
         self.d_loss_reg = self.d_loss + self.reg
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-            # self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5)  # DP case
-            # grads_and_vars = self.d_rmsprop.compute_gradients(-1*self.d_loss_reg, var_list=self.d_net.vars)
-            # dp_grads_and_vars = []  # noisy version
-            # for gv in grads_and_vars:  # for each pair
-            #     g = gv[0]  # get the gradient, type in loop one: Tensor("gradients/AddN_37:0", shape=(4, 4, 1, 64), dtype=float32)
-            #     #print g # shape of all vars
-            #     if g is not None:  # skip None case
-            #         g = self.dpnoise(g, batch_size)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
-            #     dp_grads_and_vars.append((g, gv[1]))
-            # self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
-            self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
-                .minimize(-1*self.d_loss_reg, var_list=self.d_net.vars) # non-DP case
+            self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5)  # DP case
+            grads_and_vars = self.d_rmsprop.compute_gradients(-1*self.d_loss_reg, var_list=self.d_net.vars)
+            dp_grads_and_vars = []  # noisy version
+            for gv in grads_and_vars:  # for each pair
+                g = gv[0]  # get the gradient, type in loop one: Tensor("gradients/AddN_37:0", shape=(4, 4, 1, 64), dtype=float32)
+                #print g # shape of all vars
+                if g is not None:  # skip None case
+                    g = self.dpnoise(g, batch_size)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
+                dp_grads_and_vars.append((g, gv[1]))
+            self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
+            # self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
+            #     .minimize(-1*self.d_loss_reg, var_list=self.d_net.vars) # non-DP case
             self.g_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
                 .minimize(-1*self.g_loss_reg, var_list=self.g_net.vars)
 
@@ -70,7 +70,7 @@ class WassersteinGAN(object):
         self.d_loss_store = [] # store loss of discriminator
         self.wdis_store = []  # store Wasserstein distance, new added
 
-    def train(self, batch_size=64, num_batches=200000):
+    def train(self, batch_size=64, num_batches=2):
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
         im = loaddata_face(self.path) # load whole CelebA dataset
@@ -84,8 +84,8 @@ class WassersteinGAN(object):
                 data_td = loaddata_face_batch(im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_clip)
-                # self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
-                self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
+                self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
+                # self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
 
             bz = self.z_sampler(batch_size, self.z_dim) # train generator, another batch of z sample
             self.sess.run(self.g_rmsprop, feed_dict={self.z: bz, self.x: data_td})
@@ -165,15 +165,15 @@ class WassersteinGAN(object):
         plt.tight_layout()
         plt.savefig('./result/genefinalfig/x_training_data.jpg')
 
-        # store generator and discriminator
-        saver = tf.train.Saver()
-        save_path = saver.save(self.sess, "result/sesssave/sess.ckpt")
-        print("Training finished, session saved in file: %s" % save_path)
+        # # store generator and discriminator
+        # saver = tf.train.Saver()
+        # save_path = saver.save(self.sess, "result/sesssave/sess.ckpt")
+        # print("Training finished, session saved in file: %s" % save_path)
 
     def dpnoise(self, tensor, batch_size):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
-        sigma = 0.00000  # assign it manually
+        sigma = 0.00005  # assign it manually
         cg = 160000.0
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batch_size), rt))
