@@ -237,13 +237,6 @@ class WassersteinGAN(object):
     def norm_w(self, v):
         return sum([linalg.norm(i) for i in v])
 
-    def scale_transform(self, image):
-        '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''
-        im = array(image)
-        Max = amax(im)
-        for i in range(len(im)):
-            im[i] = (im[i] / Max) * 255
-        return im
 
 
 if __name__ == '__main__':

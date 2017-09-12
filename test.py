@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib import gridspec
 import cPickle as pickle
-from numpy import dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
+from numpy import ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
 import os, os.path
 from PIL import Image
 from random import shuffle
@@ -17,11 +17,13 @@ import tensorflow as tf
 from utilize import *
 import csv
 from heapq import nsmallest
-# from sklearn import linear_model
+from sklearn import linear_model
 import shutil
 import scipy.misc
 from resizeimage import resizeimage
 from tensorflow.examples.tutorials.mnist import input_data
+
+
 
 
 
@@ -47,6 +49,7 @@ tr = [[1,3], [2,3], [3,3], [2,5]]
 tr = array([[1,3], [2,3], [3,3], [2,5]])
 tr = array([[1,3,2], [2,3], [3,3], [2,5]])
 tr = [[1,3,2], [2,3], [3,3], [2,5]]
+tr = array([[1,2], [2,3], [3,3], [2,5], [3,5], [1,5]])
 array([4,6])
 Y = [1,4,7,0,3]
 X1 = [[1,2],[3,2],[4,2],[1,6],[12,2]]
@@ -65,10 +68,13 @@ g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
 te = array([[1,3,12,6], [2,3,4,7], [3,3,6,8], [2,5,9,0]])
 a = [3, 8, 9, 2, 12, 7]
 b = [4, 7, 9, 2, 12, 7]
+a = array([3, 8, 19, 2, 12, 7])
+b = array([4, 7, 9, 2, 12, 7])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
 r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11]]])
+r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11], [[2,5],[6,16]]]])
 a = array([[1],[4]])
 
 

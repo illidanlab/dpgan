@@ -13,7 +13,7 @@ class Autoencoder(object):
         self.dataType = dataType
         self.name = 'mimiciii/fc/autoencoder'
 
-    def __call__(self, x_input, reuse=True):
+    def __call__(self, x_input):
         decodeVariables = {}
         with tf.variable_scope(self.name, regularizer=tcl.l2_regularizer(self.l2scale)):
             tempVec = x_input
@@ -57,7 +57,7 @@ class Autoencoder(object):
 
     @property
     def vars(self):
-        return [var for var in tf.global_variables() if self.name in var.name]
+        return [var for var in tf.trainable_variables() if self.name in var.name]
 
 
 class Generator(object):
@@ -96,7 +96,7 @@ class Generator(object):
 
     @property
     def vars(self):
-        return [var for var in tf.all_variables() if self.name in var.name]
+        return [var for var in tf.trainable_variables() if self.name in var.name]
 
 
 class Discriminator(object):
@@ -106,7 +106,7 @@ class Discriminator(object):
         self.discriminatorActivation = discriminatorActivation
         self.name = 'mimiciii/fc/d_net'
 
-    def __call__(self, x_input, keepRate, reuse=True):
+    def __call__(self, x_input, keepRate, reuse=False):
         batchSize = tf.shape(x_input)[0]
         inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input, 0), [batchSize]), (batchSize, self.inputDim))
         tempVec = tf.concat(1, [x_input, inputMean])
@@ -125,41 +125,34 @@ class Discriminator(object):
 
         return y_hat
 
-    @property # decorator, a issue see: https://stackoverflow.com/questions/42817388/typeerror-list-object-is-not-callable-when-using-a-property
-    def vars(self):
-        return [var for var in tf.all_variables() if self.name in var.name] # string var.name contains substring self.name
-
-    def loss(self, prediction, target):
-        return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(prediction, target))
-
-
 
 class buildDiscriminator(object):
     '''Generated data need to go through a decoder before enter discriminator, real data enter discriminator directly'''
-    def __init__(self, inputDim, discriminatorDims, discriminatorActivation):
+    def __init__(self, inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType):
         self.d = Discriminator(inputDim, discriminatorDims, discriminatorActivation) # it contains a discriminator
+        self.decompressDims = decompressDims
+        self.aeActivation = aeActivation
+        self.dataType = dataType
         self.name = 'mimiciii/fc/build_d_net'
 
     def __call__(self, x_real, x_fake, keepRate, decodeVariables, reuse=True):
         y_hat_real = self.d(x_real, keepRate, reuse=False)
-        tempVec = self.x_
+        tempVec = x_fake
         i = 0
         for _ in self.decompressDims[:-1]:
-            tempVec = self.aeActivation(
-                tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]),
-                       self.decodeVariables['aed_b_' + str(i)]))
+            tempVec = self.aeActivation(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]), decodeVariables['aed_b_' + str(i)]))
             i += 1
         if self.dataType == 'binary':
-            x_decoded = tf.nn.sigmoid(
-                tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]),
-                       self.decodeVariables['aed_b_' + str(i)]))
+            x_decoded = tf.nn.sigmoid(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]), decodeVariables['aed_b_' + str(i)]))
         else:
-            x_decoded = tf.nn.relu(
-                tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]),
-                       self.decodeVariables['aed_b_' + str(i)]))
-        self.d_ = self.d_net(x_decoded)
+            x_decoded = tf.nn.relu(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]), decodeVariables['aed_b_' + str(i)]))
+        y_hat_fake = self.d(x_decoded, keepRate, reuse=True)
 
-        self.g_loss = -tf.reduce_mean(self.d_)
-        self.d_loss = -tf.reduce_mean(self.d) + tf.reduce_mean(self.d_)
+        d_loss = -tf.reduce_mean(tf.log(y_hat_real + 1e-12)) - tf.reduce_mean(tf.log(1. - y_hat_fake + 1e-12))
+        g_loss = -tf.reduce_mean(tf.log(y_hat_fake + 1e-12))
 
-        return y_hat
+        return d_loss, g_loss, y_hat_real, y_hat_fake
+
+    @property
+    def vars(self):
+        return [var for var in tf.trainable_variables() if self.name in var.name]
