@@ -117,8 +117,8 @@ class MIMIC_WGAN(object):
     def dpnoise(self, tensor, batchSize):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
-        sigma = 0.0  # assign it manually
-        cg = 0.0
+        sigma = 6000.0  # assign it manually
+        cg = 6000.0
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
@@ -162,9 +162,9 @@ if __name__ == '__main__':
     decompressDims = list(()) + [inputDim]
     bnDecay = 0.99
     l2scale = 0.001
-    pretrainEpochs = 100
+    pretrainEpochs = 2#100
     pretrainBatchSize = 128
-    nEpochs = 1000
+    nEpochs = 2#1000
     batchSize = 1024
     n_discriminator_update = 2
     bn_train = True
