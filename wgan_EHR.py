@@ -16,13 +16,15 @@ from visualize import *
 
 
 class MIMIC_WGAN(object):
-    def __init__(self, g_net, d_net, ae_net, z_sampler, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update): # changed
+    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update): # changed
         self.g_net = g_net
         self.d_net = d_net
         self.ae_net = ae_net
         self.z_sampler = z_sampler
         self.x_dim = self.d_net.inputDim
         self.z_dim = self.g_net.randomDim
+        self.decompressDims = decompressDims
+        self.aeActivation = aeActivation
         self.dataType = dataType
         self.x = tf.placeholder(tf.float32, [None, self.x_dim], name='x')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
@@ -33,7 +35,7 @@ class MIMIC_WGAN(object):
 
         self.loss_ae, self.decodeVariables = self.ae_net(self.x) # AE, autoencoder
         self.x_ = self.g_net(self.z) # G, get generated data
-        self.d_loss, self.g_loss, self.y_hat_real, self.y_hat_fake = self.d_net(self.x, self.x_, self.keep_prob, self.decodeVariables, reuse=False) # D, in the beginning, no reuse
+        self.d_loss, self.g_loss, self.y_hat_real, self.y_hat_fake, _ = self.d_net(self.x, self.x_, self.keep_prob, self.decodeVariables, reuse=False) # D, in the beginning, no reuse
         self.trainX, self.testX, _ = loadData(self.dataType, self._VALIDATION_RATIO) # load whole dataset and split into training and testing set
         self.nBatches = int(ceil(float(self.trainX.shape[0]) / float(self.batchSize))) # number of batch if using training set
 
@@ -110,15 +112,28 @@ class MIMIC_WGAN(object):
                 self.wdis_store.append(-1*rd_loss)  # Wasserstein distance will decrease
 
         z_sample = self.z_sampler(self.trainX.shape[0], self.z_dim) # generate EHR from generator, after finish training
-        x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample}) # type(x_gene): , x_gene[0].shape:
+        x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
+        print "please check this part, make sure it is correct"
+        print self.trainX.shape, self.decoder(x_gene).shape, self.testX.shape
+        return x_gene, dwp(self.trainX, self.decoder(x_gene), self.testX) # Dimension-wise prediction
 
-        return x_gene, dwp(self.trainX, x_gene, self.testX) # Dimension-wise prediction
+    def decoder(self, x_fake): # this function is specifically to make sure the output of generator goes through the decoder
+        tempVec = x_fake
+        i = 0
+        for _ in self.decompressDims[:-1]:
+            tempVec = self.aeActivation(tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]), self.decodeVariables['aed_b_' + str(i)]))
+            i += 1
+        if self.dataType == 'binary':
+            x_decoded = tf.nn.sigmoid(tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]), self.decodeVariables['aed_b_' + str(i)]))
+        else:
+            x_decoded = tf.nn.relu(tf.add(tf.matmul(tempVec, self.decodeVariables['aed_W_' + str(i)]), self.decodeVariables['aed_b_' + str(i)]))
+        return x_decoded
 
     def dpnoise(self, tensor, batchSize):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
         sigma = 6000.0  # assign it manually
-        cg = 6000.0
+        cg = 0.0
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
@@ -163,9 +178,9 @@ if __name__ == '__main__':
     bnDecay = 0.99
     l2scale = 0.001
     pretrainEpochs = 2#100
-    pretrainBatchSize = 128
+    pretrainBatchSize = 2#128
     nEpochs = 2#1000
-    batchSize = 1024
+    batchSize = 2#1024
     n_discriminator_update = 2
     bn_train = True
     _VALIDATION_RATIO = 0.1
@@ -179,8 +194,8 @@ if __name__ == '__main__':
     zs = data.NoiseSampler()
     ae_net = model.Autoencoder(inputDim, l2scale, compressDims, aeActivation, decompressDims, dataType)
     g_net = model.Generator(randomDim, l2scale, generatorDims, bn_train, generatorActivation, bnDecay, dataType)
-    d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType)
-    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update)
+    d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale)
+    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update)
     wgan.train_autoencoder(pretrainEpochs, pretrainBatchSize) # Pre-training autoencoder
     x_gene, rv, gv = wgan.train(nEpochs, batchSize)
     wgan.loss_store(x_gene, rv, gv)

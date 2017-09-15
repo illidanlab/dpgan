@@ -7,7 +7,7 @@ import tensorflow.contrib as tc
 import matplotlib
 matplotlib.use('Agg')
 import cPickle as pickle
-from numpy import linalg, argmin, array, amax, arange
+from numpy import linalg, argmin, array, arange
 import matplotlib.gridspec as gridspec
 from utilize import normlization, loaddata
 import logging # these 2 lines ar used in GPU3

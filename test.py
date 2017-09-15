@@ -1,28 +1,28 @@
 import matplotlib
 matplotlib.use('agg')
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from matplotlib import gridspec
-import cPickle as pickle
-from numpy import ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
-import os, os.path
-from PIL import Image
-from random import shuffle
-import sys, time, argparse
-from tensorflow.contrib.layers import l2_regularizer
-from tensorflow.contrib.layers import batch_norm
-import matplotlib.gridspec as gridspec
-import sys, time, argparse
-import tensorflow as tf
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
+# from matplotlib import gridspec
+# import cPickle as pickle
+# from numpy import ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
+# import os, os.path
+# from PIL import Image
+# from random import shuffle
+# import sys, time, argparse
+# from tensorflow.contrib.layers import l2_regularizer
+# from tensorflow.contrib.layers import batch_norm
+# import matplotlib.gridspec as gridspec
+# import sys, time, argparse
+# import tensorflow as tf
 from utilize import *
 import csv
 from heapq import nsmallest
 from sklearn import linear_model
 import shutil
 import scipy.misc
+from scipy import stats
 from resizeimage import resizeimage
 from tensorflow.examples.tutorials.mnist import input_data
-
 
 
 
@@ -70,12 +70,18 @@ a = [3, 8, 9, 2, 12, 7]
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
 b = array([4, 7, 9, 2, 12, 7])
+a = array([-3, -8, 19, 2, -12, 7])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
 r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11]]])
 r = array([[[1,3],[4,1]], [[2,3],[5,3]], [[3,3],[1,5]], [[2,5],[6,11], [[2,5],[6,16]]]])
 a = array([[1],[4]])
+data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
+              [0.7149, 0.0775, 0.6072, 0.9656],
+              [0.6341, 0.1403, 0.9759, 0.4064],
+              [0.5918, 0.6948, 0.904, 0.3721],
+              [0.0921, 0.2481, 0.1188, 0.1366]])
 
 
 # move (not copy) 1 out of r files from paths to pathd
@@ -194,22 +200,77 @@ plt.xlabel('Generator iterations (*10^{2})')
 plt.ylabel('Wasserstein Distance')
 plt.savefig('exp2.jpg')
 
+# collect files from subfolders, resize, move to another folder
+paths = "/home/decs/2017-DPGAN/code/wgan/face_test/LFW/lfw_aligned_cropped/" # 5749 folders, 13233 images
+pathd = "/home/decs/2017-DPGAN/code/wgan/face_test/LFW/lfw_aligned_cropped_64641/"
+folders = ([name for name in os.listdir(paths)
+            if os.path.isdir(os.path.join(paths, name)) and name.startswith("LFW")]) # get all directories
+print len(folders)
 
-# resize rgb image, see "https://pypi.python.org/pypi/python-resize-image"->"resize_cover(image, size, validate=True)"
-paths = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st/"
-pathd = "/home/decs/2017-DPGAN/data/img_align_celeba_10000_1st_r/"
+for folder in folders:
+    im_name = [name for name in os.listdir(paths+folder) if os.path.isfile(os.path.join(paths+folder, name))]
+    for i in range(len(im_name)):
+        fd_img = open(paths + folder + '/' + im_name[i], 'r')
+        img = Image.open(fd_img)
+        img = resizeimage.resize_cover(img, [64, 64, 1])
+        img.save(pathd + im_name[i], img.format)
+        if i % 100 == 0:
+            print i
+            print asarray(img.getdata(),dtype=float64).shape
+            print img.size
+    fd_img.close()
+
+# data normalization
+data2 = []
+for i in range(len(data)):
+    data2.append(data[i]/np.linalg.norm(data[i]))
+    # print np.linalg.norm(data2[i])
+data2 = np.asarray(data2)
+# print data2.shape
+
+# RGB (,,3) to grayscale (,,1), move to another folder
+paths = "/home/decs/2017-DPGAN/code/wgan/face_test/LFW/lfw_aligned_cropped_64643/"
+pathd = "/home/decs/2017-DPGAN/code/wgan/face_test/LFW/lfw_aligned_cropped_64641/"
+im_name = [name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))]
+print len(im_name)
+for i in range(len(im_name)):
+    img = Image.open(paths + im_name[i]).convert('L')
+    img.save(pathd + im_name[i])
+    if i % 100 == 0:
+        print i
+        print asarray(img.getdata(),dtype=float64).shape
+        print img.size
+
+# check the size and value of grayscale images and save it (as grayscale image)
+paths = "/home/decs/2017-DPGAN/code/wgan/face_test/CelebA/img_align_celeba_50k_1st_r_64_64_1/"
+im_name = [name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))]
+fd_img = open(paths + im_name[0], 'r')
+img = Image.open(fd_img)
+im_arr = asarray(img.getdata(),dtype=float64).reshape(64,64)
+print im_arr.shape
+print amax(im_arr), amin(im_arr)
+im_arr = normlization(im_arr)
+print im_arr.shape
+print amax(im_arr), amin(im_arr)
+plt.gray() # https://stackoverflow.com/questions/7694772/turning-a-large-matrix-into-a-grayscale-image
+plt.imshow(im_arr)
+plt.savefig('grayscale.jpg')
+
+# resize rgb image, no convert to grayscale, see "https://pypi.python.org/pypi/python-resize-image"->"resize_cover(image, size, validate=True)"
+paths = "/home/decs/2017-DPGAN/code/wgan/face_test/CelebA/img_align_celeba_50k_1st_r_64_64_1/"
+pathd = "/home/decs/2017-DPGAN/code/wgan/face_test/CelebA/img_align_celeba_50k_1st_r_16_16_1/"
 im_name = [name for name in os.listdir(paths) if os.path.isfile(os.path.join(paths, name))]
 N = len(im_name)
 print N
 for i in range(N):
-    if i % 100 == 0:
-        print i
     fd_img = open(paths + im_name[i], 'r')
     img = Image.open(fd_img)
-    img = resizeimage.resize_cover(img, [32, 32, 3])
-    # print asarray(img.getdata(),dtype=float64).shape
-    # print img.size
+    img = resizeimage.resize_cover(img, [16, 16, 1])
     img.save(pathd + im_name[i], img.format)
+    if i % 100 == 0:
+        print i
+        print asarray(img.getdata(),dtype=float64).shape
+        print img.size
 fd_img.close()
 
 # move (not copy) 1 out of r files from paths to pathd
@@ -273,6 +334,15 @@ with tf.Session() as ss:
     ss.run(init)
     print ss.run(matrix1)
     print ss.run(matrix2)
+
+# test buildDiscriminator, placeholder + constant
+a = tf.placeholder(tf.float32, name='z')
+b = tf.constant(2.4)
+c = a + b
+init = tf.initialize_all_variables()
+with tf.Session() as ss:
+    ss.run(init)
+    print ss.run(c, feed_dict={a:3.5})
 
 a =tf.constant(2, name="a")
 b =tf.constant(3, name="b")
@@ -381,18 +451,4 @@ for i in range(row):
         ax.imshow(ima)
 plt.show()
 
-# following code have something wrong, don't use, list here just in case
-# reduce the size of image and store in other directory, in GPU
-path = "/home/xieliyan/Desktop/img_align_celeba_10000_3rd/"
-pathd = "/home/xieliyan/Desktop/img_align_celeba_10000_3rd_r/"
-lname = [name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))]
-N = len(lname)
-print N
-for i in range(N):
-    if i % 100 == 0:
-        print i
-    jpgfile = Image.open(path + lname[i])
-    jpgfile = scipy.misc.imresize(jpgfile, (128, 128, 3))  # remember the channel = 3, see "https://stackoverflow.com/questions/6086621/how-to-reduce-an-image-size-in-image-processing-scipy-numpy-python"
-    plt.imshow(jpgfile)
-    plt.savefig(pathd + lname[i])
 '''

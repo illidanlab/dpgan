@@ -24,8 +24,8 @@ def data_readf():
     MIMIC_data = []
     for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
         MIMIC_data.append(value)
-        print len(MIMIC_data) # prevent of out of memory
         if len(MIMIC_data) == 100:
+            print "Break out to prevent out of memory"
             break
     MIMIC_data = array(MIMIC_data)
     num_data = (MIMIC_data.shape)[0] # data number
@@ -48,7 +48,11 @@ def loadData(dataType, _VALIDATION_RATIO):
 def split(matrix, col):
     '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
     t_r = matrix[:,col] # shape: (len(t_r),)
+    print "we need to print out something"
+    print t_r.shape
     f_r = delete(matrix, col, 1)
+    print "we need to print out something"
+    print f_r.shape
     return f_r, t_r
 
 def match(l1,l2):
@@ -112,7 +116,7 @@ def loaddata_face(path):
         # print asarray(jpgfile.getdata(),dtype=float64).shape
         # print jpgfile.size
         # image_n[i] = im_avg(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))
-        image_n[i] = asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],1)) # image is averaged
+        image_n[i] = normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],1))) # image is averaged
     return image_n
 
 # path = "./face/CelebA/img_align_celeba_50k_1st_r_64_64_1/"

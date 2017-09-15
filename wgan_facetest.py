@@ -17,7 +17,7 @@ from visualize import *
 
 
 class WassersteinGAN(object):
-    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, path = "./face_test/CelebA/img_align_celeba_50k_1st_r_64_64_1/", batch_size=64): # changed
+    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, path = "./face_test/LFW/lfw_aligned_cropped_64641/", batch_size=64): # changed
         self.model = model
         self.data = data
         self.g_net = g_net
@@ -27,9 +27,9 @@ class WassersteinGAN(object):
         self.x_dim = self.d_net.x_dim
         self.z_dim = self.g_net.z_dim
         self.path = path
+        self.im = loaddata_face(self.path) # load whole CelebA dataset
         self.x = tf.placeholder(tf.float32, [None] + self.x_dim, name='x')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
-
         self.x_ = self.g_net(self.z)
 
         self.d = self.d_net(self.x, reuse=False)
@@ -46,18 +46,18 @@ class WassersteinGAN(object):
         self.d_loss_reg = self.d_loss + self.reg
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-            self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5)  # DP case
-            grads_and_vars = self.d_rmsprop.compute_gradients(-1*self.d_loss_reg, var_list=self.d_net.vars)
-            dp_grads_and_vars = []  # noisy version
-            for gv in grads_and_vars:  # for each pair
-                g = gv[0]  # get the gradient, type in loop one: Tensor("gradients/AddN_37:0", shape=(4, 4, 1, 64), dtype=float32)
-                #print g # shape of all vars
-                if g is not None:  # skip None case
-                    g = self.dpnoise(g, batch_size)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
-                dp_grads_and_vars.append((g, gv[1]))
-            self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
-            # self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
-            #     .minimize(-1*self.d_loss_reg, var_list=self.d_net.vars) # non-DP case
+            # self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5)  # DP case
+            # grads_and_vars = self.d_rmsprop.compute_gradients(-1*self.d_loss_reg, var_list=self.d_net.vars)
+            # dp_grads_and_vars = []  # noisy version
+            # for gv in grads_and_vars:  # for each pair
+            #     g = gv[0]  # get the gradient, type in loop one: Tensor("gradients/AddN_37:0", shape=(4, 4, 1, 64), dtype=float32)
+            #     #print g # shape of all vars
+            #     if g is not None:  # skip None case
+            #         g = self.dpnoise(g, batch_size)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
+            #     dp_grads_and_vars.append((g, gv[1]))
+            # self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
+            self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
+                .minimize(-1*self.d_loss_reg, var_list=self.d_net.vars) # non-DP case
             self.g_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
                 .minimize(-1*self.g_loss_reg, var_list=self.g_net.vars)
 
@@ -70,10 +70,10 @@ class WassersteinGAN(object):
         self.d_loss_store = [] # store loss of discriminator
         self.wdis_store = []  # store Wasserstein distance, new added
 
-    def train(self, batch_size=64, num_batches=200000):
+    def train(self, batch_size=64, num_batches=50000):
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
-        im = loaddata_face(self.path) # load whole CelebA dataset
+        print 'We change iteration to 50000'
         start_time = time.time()
         for t in range(0, num_batches):
             d_iters = 5
@@ -81,17 +81,17 @@ class WassersteinGAN(object):
                  d_iters = 100
 
             for _ in range(0, d_iters): # train discriminator
-                data_td = loaddata_face_batch(im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
+                data_td = loaddata_face_batch(self.im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_clip)
-                self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
-                # self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
+                # self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
+                self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
 
             bz = self.z_sampler(batch_size, self.z_dim) # train generator, another batch of z sample
             self.sess.run(self.g_rmsprop, feed_dict={self.z: bz, self.x: data_td})
 
             if t % 100 == 0: # evaluate loss and norm of gradient vector
-                bx = loaddata_face_batch(im, batch_size) # the reason we generate another batch of sample is that we want to see if the distance of 2 distributions are indeed pulled closer
+                bx = loaddata_face_batch(self.im, batch_size) # the reason we generate another batch of sample is that we want to see if the distance of 2 distributions are indeed pulled closer
                 bz = self.z_sampler(batch_size, self.z_dim)
 
                 rd_loss = self.sess.run(
@@ -127,9 +127,8 @@ class WassersteinGAN(object):
 
         N = 10 # generate images from generator, after finish training
         z_sample = self.z_sampler(N, self.z_dim)
-        x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample}) # type(x_gene): <type 'numpy.ndarray'>, x_gene[0].shape: (784,)
-        im = loaddata_face(self.path)
-        face_data = loaddata_face_batch(im, len([name for name in os.listdir(self.path) if os.path.isfile(os.path.join(self.path, name))])) # load whole data set, face_data is already normlized (/255)
+        x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
+        face_data = loaddata_face_batch(self.im, len([name for name in os.listdir(self.path) if os.path.isfile(os.path.join(self.path, name))])) # load whole data set, face_data is already normlized (/255)
         x_training_data = []  # corresponding nearest training points in whole face data
         for i in range(N):
             x_ind = self.find(x_gene[i], face_data) # find the nearest training point for each generated data point in whole face data
@@ -145,21 +144,24 @@ class WassersteinGAN(object):
             pickle.dump(x_training_data, fp)
         with open('./result/genefinalfig/norm_d_net_var_grad.pickle', 'wb') as fp:
             pickle.dump(self.norm_d_net_var_grad, fp)
-        x_gene = array(x_gene) # x_gene[i] shouldn't have the 3rd coordinate: channel
-        x_training_data = array(x_training_data)
+        x_gene = array(x_gene) # x_gene[i].shape: (64, 64, 1)
+        x_training_data = array(x_training_data) # x_training_data[i].shape: (64, 64, 1)
         plt.figure(figsize=(5, 60))
         G = gridspec.GridSpec(N, 1)
+        plt.gray()
         for i in range(N):
             plt.subplot(G[i, :])
-            plt.imshow(squeeze(x_gene[i]), interpolation='nearest') # only accepted 2 dim to show image
+            plt.imshow(squeeze(x_gene[i]).reshape((64, 64)), interpolation='nearest') # only accepted 2 dim to show image, x_gene[i] shouldn't have the 3rd coordinate: channel
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
+        plt.gray()
         plt.savefig('./result/genefinalfig/x_gene.jpg')
         plt.clf()
+        plt.gray()
         for i in range(N):
             plt.subplot(G[i, :])
-            plt.imshow(squeeze(x_training_data[i]), interpolation='nearest')
+            plt.imshow(squeeze(x_training_data[i]).reshape((64, 64)), interpolation='nearest')
             plt.xticks(())
             plt.yticks(())
         plt.tight_layout()
@@ -173,7 +175,7 @@ class WassersteinGAN(object):
     def dpnoise(self, tensor, batch_size):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
-        sigma = 0.00005  # assign it manually
+        sigma = 0.000000  # assign it manually
         cg = 160000.0
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batch_size), rt))

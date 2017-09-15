@@ -2,7 +2,7 @@ import numpy as np
 from utilize import loaddata_face
 
 
-path = "./face_test/CelebA/img_align_celeba_50k_1st_r_64_64_1/"
+path = "./face_test/LFW/lfw_aligned_cropped_64641/"
 
 
 
