@@ -96,9 +96,10 @@ class MIMIC_WGAN(object):
                     batchIdx = random.choice(idx, size=batchSize, replace=False)
                     batchX = self.trainX[batchIdx]
                     randomZ = self.z_sampler(batchSize, self.z_dim)
-                    self.sess.run(self.d_clip)
                     #_, rd_loss = self.sess.run([self.d_rmsprop_new, self.d_loss], feed_dict={self.x: batchX, self.z: randomZ}) # DP case
                     _, rd_loss = self.sess.run([self.d_rmsprop, self.d_loss], feed_dict={self.x: batchX, self.z: randomZ, self.keep_prob: 1.0}) # non-DP case
+                    self.sess.run(self.d_clip)
+
                 randomZ = self.z_sampler(batchSize, self.z_dim) # train generator
                 _, rg_loss = self.sess.run([self.g_rmsprop, self.g_loss], feed_dict={self.x: batchX, self.z: randomZ, self.keep_prob: 1.0})
 

@@ -100,16 +100,17 @@ class Generator(object):
 
 
 class Discriminator(object):
-    def __init__(self, inputDim, discriminatorDims, discriminatorActivation):
+    def __init__(self, inputDim, discriminatorDims, discriminatorActivation, l2scale):
         self.inputDim = inputDim
         self.discriminatorDims = discriminatorDims
         self.discriminatorActivation = discriminatorActivation
+        self.l2scale = l2scale
         self.name = 'mimiciii/fc/d_net'
 
     def __call__(self, x_input, keepRate, reuse=False):
         batchSize = tf.shape(x_input)[0]
         inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input, 0), [batchSize]), (batchSize, self.inputDim))
-        tempVec = tf.concat(1, [x_input, inputMean])
+        tempVec = tf.concat(axis = 1, values = [x_input, inputMean]) # https://stackoverflow.com/questions/41813665/tensorflow-slim-typeerror-expected-int32-got-list-containing-tensors-of-type
         tempDim = self.inputDim * 2
         with tf.variable_scope(self.name, reuse=reuse, regularizer=tcl.l2_regularizer(self.l2scale)):
             for i, discDim in enumerate(self.discriminatorDims[:-1]):
@@ -123,20 +124,21 @@ class Discriminator(object):
             b = tf.get_variable('b', shape=[1])
             y_hat = tf.squeeze(tf.nn.sigmoid(tf.add(tf.matmul(tempVec, W), b)))
 
-        return y_hat
+        return y_hat, self.name
 
 
 class buildDiscriminator(object):
     '''Generated data need to go through a decoder before enter discriminator, real data enter discriminator directly'''
-    def __init__(self, inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType):
-        self.d = Discriminator(inputDim, discriminatorDims, discriminatorActivation) # it contains a discriminator
+    def __init__(self, inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale):
+        self.d = Discriminator(inputDim, discriminatorDims, discriminatorActivation, l2scale) # it contains a discriminator
+        self.inputDim = inputDim
         self.decompressDims = decompressDims
         self.aeActivation = aeActivation
         self.dataType = dataType
         self.name = 'mimiciii/fc/build_d_net'
 
     def __call__(self, x_real, x_fake, keepRate, decodeVariables, reuse=True):
-        y_hat_real = self.d(x_real, keepRate, reuse=False)
+        y_hat_real, self.name = self.d(x_real, keepRate, reuse=False)
         tempVec = x_fake
         i = 0
         for _ in self.decompressDims[:-1]:
@@ -146,12 +148,11 @@ class buildDiscriminator(object):
             x_decoded = tf.nn.sigmoid(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]), decodeVariables['aed_b_' + str(i)]))
         else:
             x_decoded = tf.nn.relu(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]), decodeVariables['aed_b_' + str(i)]))
-        y_hat_fake = self.d(x_decoded, keepRate, reuse=True)
+        y_hat_fake, self.name = self.d(x_decoded, keepRate, reuse=True)
+        d_loss = -tf.reduce_mean(tf.log(y_hat_real)) - tf.reduce_mean(tf.log(1. - y_hat_fake )) # 1. - y_hat_fake will cause "unsupported operand type(s) for -: 'float' and 'tuple'" error
+        g_loss = -tf.reduce_mean(tf.log(y_hat_fake))
 
-        d_loss = -tf.reduce_mean(tf.log(y_hat_real + 1e-12)) - tf.reduce_mean(tf.log(1. - y_hat_fake + 1e-12))
-        g_loss = -tf.reduce_mean(tf.log(y_hat_fake + 1e-12))
-
-        return d_loss, g_loss, y_hat_real, y_hat_fake
+        return d_loss, g_loss, y_hat_real, y_hat_fake, x_decoded
 
     @property
     def vars(self):

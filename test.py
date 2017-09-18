@@ -1,19 +1,19 @@
 import matplotlib
 matplotlib.use('agg')
-# import matplotlib.pyplot as plt
-# import matplotlib.image as mpimg
-# from matplotlib import gridspec
-# import cPickle as pickle
-# from numpy import ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
-# import os, os.path
-# from PIL import Image
-# from random import shuffle
-# import sys, time, argparse
-# from tensorflow.contrib.layers import l2_regularizer
-# from tensorflow.contrib.layers import batch_norm
-# import matplotlib.gridspec as gridspec
-# import sys, time, argparse
-# import tensorflow as tf
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from matplotlib import gridspec
+import cPickle as pickle
+from numpy import ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
+import os, os.path
+from PIL import Image
+from random import shuffle
+import sys, time, argparse
+from tensorflow.contrib.layers import l2_regularizer
+from tensorflow.contrib.layers import batch_norm
+import matplotlib.gridspec as gridspec
+import sys, time, argparse
+import tensorflow as tf
 from utilize import *
 import csv
 from heapq import nsmallest
@@ -71,6 +71,7 @@ b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
 b = array([4, 7, 9, 2, 12, 7])
 a = array([-3, -8, 19, 2, -12, 7])
+a = array([-1, -1, 1, 1, -1, 1])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
@@ -83,6 +84,15 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
               [0.5918, 0.6948, 0.904, 0.3721],
               [0.0921, 0.2481, 0.1188, 0.1366]])
 
+# collect weights (only, no bias) in discriminator
+weights = [var for var in self.d_net.vars if "weights:0" in var.name]
+# print tensor's name in discriminator
+print [var.name for var in self.d_vars]
+g = "Matrix:0ha"
+if "Matrix:0" in g or "w:0" in g:
+    print "find it"
+else:
+    print "not find"
 
 # move (not copy) 1 out of r files from paths to pathd
 paths = "/home/decs/2017-DPGAN/data/img_align_celeba/"

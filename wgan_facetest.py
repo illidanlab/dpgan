@@ -27,7 +27,7 @@ class WassersteinGAN(object):
         self.x_dim = self.d_net.x_dim
         self.z_dim = self.g_net.z_dim
         self.path = path
-        self.im = loaddata_face(self.path) # load whole CelebA dataset
+        self.im = loaddata_face(self.path) # load whole dataset
         self.x = tf.placeholder(tf.float32, [None] + self.x_dim, name='x')
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
         self.x_ = self.g_net(self.z)
@@ -61,7 +61,7 @@ class WassersteinGAN(object):
             self.g_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
                 .minimize(-1*self.g_loss_reg, var_list=self.g_net.vars)
 
-        self.d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in self.d_net.vars]
+        self.d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in self.d_net.vars] # using LFW, most of weights less than 0.01
         self.d_net_var_grad = [i for i in tf.gradients(self.d_loss_reg, self.d_net.vars) if i is not None] # explore the effect of noise on norm of D net variables's gradient vector, also remove None type
         self.norm_d_net_var_grad = []
         gpu_options = tf.GPUOptions(allow_growth=True)
@@ -70,10 +70,10 @@ class WassersteinGAN(object):
         self.d_loss_store = [] # store loss of discriminator
         self.wdis_store = []  # store Wasserstein distance, new added
 
-    def train(self, batch_size=64, num_batches=50000):
+    def train(self, batch_size=64, num_batches=1000000):
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
-        print 'We change iteration to 50000'
+        print "We change iteration to " + str(num_batches)
         start_time = time.time()
         for t in range(0, num_batches):
             d_iters = 5
@@ -83,9 +83,9 @@ class WassersteinGAN(object):
             for _ in range(0, d_iters): # train discriminator
                 data_td = loaddata_face_batch(self.im, batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
                 bz = self.z_sampler(batch_size, self.z_dim)
-                self.sess.run(self.d_clip)
                 # self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
                 self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
+                self.sess.run(self.d_clip)
 
             bz = self.z_sampler(batch_size, self.z_dim) # train generator, another batch of z sample
             self.sess.run(self.g_rmsprop, feed_dict={self.z: bz, self.x: data_td})

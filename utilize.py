@@ -5,12 +5,12 @@ from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 import matplotlib
 matplotlib.use('agg')
-import matplotlib.pyplot as plt
 import os, struct
 from pylab import *
 from array import array as pyarray
 from numpy import *
 from PIL import Image
+
 
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
@@ -109,7 +109,8 @@ def loaddata_face(path):
     # for file in os.listdir(path):
     #     print file
     im_name = array([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
-    N = len(im_name) # count files in directory, the file names in original total: "000001.jpg" to "202599.jpg"
+    N = len(im_name) # count files in directory
+    # N = 10
     image_n = zeros(shape=(N, 64, 64, 1)) # normalized image
     for i in range(N):
         jpgfile = Image.open(path + im_name[i])
