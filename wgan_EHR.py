@@ -114,9 +114,11 @@ class MIMIC_WGAN(object):
 
         z_sample = self.z_sampler(self.trainX.shape[0], self.z_dim) # generate EHR from generator, after finish training
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
-        print "please check this part, make sure it is correct"
-        print self.trainX.shape, self.decoder(x_gene).shape, self.testX.shape
-        return x_gene, dwp(self.trainX, self.decoder(x_gene), self.testX) # Dimension-wise prediction
+        # print "please check this part, make sure it is correct"
+        # print self.trainX.shape, x_gene.shape, self.decoder(x_gene).shape, self.testX.shape
+        self.dec = self.decoder(x_gene)
+        x_gene_dec = self.sess.run(self.dec)
+        return x_gene_dec, dwp(self.trainX, x_gene_dec, self.testX) # Dimension-wise prediction, note that self.trainX and self.testX are numpy array but self.decoder(x_gene) is tensor
 
     def decoder(self, x_fake): # this function is specifically to make sure the output of generator goes through the decoder
         tempVec = x_fake
@@ -198,5 +200,5 @@ if __name__ == '__main__':
     d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale)
     wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update)
     wgan.train_autoencoder(pretrainEpochs, pretrainBatchSize) # Pre-training autoencoder
-    x_gene, rv, gv = wgan.train(nEpochs, batchSize)
-    wgan.loss_store(x_gene, rv, gv)
+    x_gene, tuplerg = wgan.train(nEpochs, batchSize)
+    wgan.loss_store(x_gene, tuplerg[0], tuplerg[1])

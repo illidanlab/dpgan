@@ -68,7 +68,7 @@ class WassersteinGAN(object):
         self.d_loss_store = [] # store loss of discriminator
         self.wdis_store = []  # store Wasserstein distance, new added
 
-    def train(self, batch_size=64, num_batches=500000):
+    def train(self, batch_size=64, num_batches=500000): # batch_size*ite should be euough to use whole dataset for
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
         start_time = time.time()

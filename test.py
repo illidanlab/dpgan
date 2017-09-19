@@ -23,6 +23,9 @@ import scipy.misc
 from scipy import stats
 from resizeimage import resizeimage
 from tensorflow.examples.tutorials.mnist import input_data
+import numpy as np
+from sklearn.svm import SVC
+
 
 
 

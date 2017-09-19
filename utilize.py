@@ -3,6 +3,7 @@ from numpy import array, delete
 import cPickle as pickle
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
 import matplotlib
 matplotlib.use('agg')
 import os, struct
@@ -25,7 +26,7 @@ def data_readf():
     for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
         MIMIC_data.append(value)
         if len(MIMIC_data) == 100:
-            print "Break out to prevent out of memory"
+            print "Break out to prevent out of memory issue"
             break
     MIMIC_data = array(MIMIC_data)
     num_data = (MIMIC_data.shape)[0] # data number
@@ -48,11 +49,7 @@ def loadData(dataType, _VALIDATION_RATIO):
 def split(matrix, col):
     '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
     t_r = matrix[:,col] # shape: (len(t_r),)
-    print "we need to print out something"
-    print t_r.shape
     f_r = delete(matrix, col, 1)
-    print "we need to print out something"
-    print f_r.shape
     return f_r, t_r
 
 def match(l1,l2):
@@ -72,17 +69,24 @@ def dwp(r, g, te):
     for i in range(len(r[0])):
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
-        f_te, t_te = split(te, i)
-        model_r = linear_model.LogisticRegression()
-        model_r.fit(f_r, t_r)
-        label_r = model_r.predict(f_te)
-        model_g = linear_model.LogisticRegression()
-        model_g.fit(f_g, t_g)
-        label_g = model_r.predict(f_te)
-        print label_r, label_g, t_te
-        rv.append(match(label_r, t_te)/(len(t_te)+10**(-10)))
-        gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
-    return rv, gv # return 2 vectors, both with length dim_data, classification error rate
+        f_te, t_te = split(te, i) # these 6 are all numpy array
+        reg = linear_model.LinearRegression()
+        reg.fit(f_r, t_r)
+        target_r = reg.predict(f_te)
+        reg = linear_model.LinearRegression()
+        reg.fit(f_g, t_g)
+        target_g = reg.predict(f_te)
+        rv.append(square(linalg.norm(target_r-t_te)))
+        gv.append(square(linalg.norm(target_g-t_te)))
+        # model_r = linear_model.LogisticRegression() # if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+        # model_r.fit(f_r, t_r)
+        # label_r = model_r.predict(f_te)
+        # model_g = linear_model.LogisticRegression()
+        # model_g.fit(f_g, t_g)
+        # label_g = model_r.predict(f_te)
+        # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10)))
+        # gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
+    return rv, gv
 
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 # g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
