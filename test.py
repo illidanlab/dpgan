@@ -28,8 +28,6 @@ from sklearn.svm import SVC
 
 
 
-
-
 '''
 #icd9_groups.pkl: type: list, len: 942, type of each: unicode
 #feature_dictionary.pkl: type: dict, len: 942, MIMIC_ICD9['619']: 508

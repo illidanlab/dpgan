@@ -2,7 +2,7 @@ import numpy as np
 from utilize import loaddata_face
 
 
-path = "./face_test/LFW/lfw_aligned_cropped_64641/"
+path = "/home/xieliyan/Dropbox/GPU/Data/face_test/LFW/lfw_aligned_cropped_64641/"
 
 
 

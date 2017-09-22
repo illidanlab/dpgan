@@ -11,7 +11,7 @@ from pylab import *
 from array import array as pyarray
 from numpy import *
 from PIL import Image
-
+from sklearn.preprocessing import binarize
 
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
@@ -20,15 +20,15 @@ def normlization(image):
 
 def data_readf():
     '''Read MIMIC-III data'''
-    with open('./MIMIC-III/patient_vectors.pkl', 'rb') as f:
+    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors.pkl', 'rb') as f:
         MIMIC_ICD9 = pickle.load(f) # dictionary, each one is a list
     MIMIC_data = []
     for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
         MIMIC_data.append(value)
-        if len(MIMIC_data) == 100:
-            print "Break out to prevent out of memory issue"
-            break
-    MIMIC_data = array(MIMIC_data)
+        # if len(MIMIC_data) == 100:
+        #     print "Break out to prevent out of memory issue"
+        #     break
+    MIMIC_data = binarize(array(MIMIC_data)) # binarize, no zero
     num_data = (MIMIC_data.shape)[0] # data number
     dim_data = (MIMIC_data.shape)[1] # data dimension
     return MIMIC_data, num_data, dim_data # (46520, 942) 46520 942 for whole dataset

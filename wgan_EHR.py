@@ -154,10 +154,11 @@ class MIMIC_WGAN(object):
         with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp: # store generated EHR and figures
             pickle.dump(x_gene, fp)
         plt.close()
-        plt.plot(rv, gv, 'bo')
+        plt.scatter(rv, gv, alpha=0.5)
+        plt.title('Scatter plot of dimension-wise MSE')
         plt.xlabel('Real')
         plt.ylabel('Generated')
-        plt.savefig('./result/lossfig/dwp.jpg')
+        plt.savefig('./result/genefinalfig/dwp.jpg')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('')
@@ -170,7 +171,7 @@ if __name__ == '__main__':
     model = importlib.import_module(args.data + '.' + args.model)
 
     # some parameters
-    dataType = 'count'
+    dataType = 'binary'
     inputDim = 942
     embeddingDim = 128
     randomDim = 128
@@ -180,10 +181,10 @@ if __name__ == '__main__':
     decompressDims = list(()) + [inputDim]
     bnDecay = 0.99
     l2scale = 0.001
-    pretrainEpochs = 2#100
-    pretrainBatchSize = 2#128
-    nEpochs = 2#1000
-    batchSize = 2#1024
+    pretrainEpochs = 100 #2
+    pretrainBatchSize = 128 #2
+    nEpochs = 1000 #2
+    batchSize = 1024 #2
     n_discriminator_update = 2
     bn_train = True
     _VALIDATION_RATIO = 0.1
