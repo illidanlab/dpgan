@@ -21,22 +21,32 @@ from sklearn import linear_model
 import shutil
 import scipy.misc
 from scipy import stats
-from resizeimage import resizeimage
 from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
 from sklearn.svm import SVC
+from resizeimage import resizeimage
+# import pandas as pd
 
+# df = pd.read_pickle('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/cohort.pkl')
+# with open('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/new_cohort.pkl', 'rb') as fp:
+#     data = pickle.load(fp)
+
+# test dwp using MIMIC-III data
+trainX, testX, _ = load_MIMICIII('binary', 0.1, 30)  # load whole dataset and split into training and testing set
+rv, gv = dwp(trainX, trainX, testX)
+plt.scatter(rv, gv, alpha=0.5)
+plt.title('Scatter plot of dimension-wise MSE')
+plt.xlabel('Real')
+plt.ylabel('Generated')
+plt.savefig('./result/genefinalfig/dwp.jpg')
 
 
 '''
-#icd9_groups.pkl: type: list, len: 942, type of each: unicode
-#feature_dictionary.pkl: type: dict, len: 942, MIMIC_ICD9['619']: 508
-#patient_vectors.pkl: type: dict, len: 46520, len of each: 942, type of each: list
-
 print "we need to print out something"
 print "something change"
 print "Test begin"
 print "Test end"
+
 print bx.shape
 matrix1 = tf.constant([[3., 3.]])
 a = [1,2]
@@ -45,7 +55,7 @@ a = array([1,19])
 b = array([1,51])
 c = array([[1,20],[1,3],[1,50]])
 i = [1,2,3]
-g = [1,2]
+g = array([1,2])
 tr = [[1,3], [2,3], [3,3], [2,5]]
 tr = array([[1,3], [2,3], [3,3], [2,5]])
 tr = array([[1,3,2], [2,3], [3,3], [2,5]])
@@ -65,14 +75,19 @@ gen = [2.5,2.5]
 a = [1, 2]
 b = asarray(a)
 r = array([[1,3,4,1], [2,3,5,3], [3,3,1,5], [2,5,6,11]])
+r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
 te = array([[1,3,12,6], [2,3,4,7], [3,3,6,8], [2,5,9,0]])
 a = [3, 8, 9, 2, 12, 7]
+b = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
 b = array([4, 7, 9, 2, 12, 7])
 a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])
+a = array([1, 2, 3, 4, 5, 6])
+b = array([14, 11, 4, 12, 22, 5])
+r = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,01], [0,0,1,0,0], [0,0,0,0,0]])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])

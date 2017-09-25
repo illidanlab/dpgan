@@ -18,9 +18,30 @@ def normlization(image):
     im = image/255.0
     return im
 
-def data_readf():
+# def age_filter(data):
+#     '''remove certain data points by certain property'''
+#
+#     return data_new
+
+def select(data, top):
+    '''select top "top" of feature (by frequency) appears in data (binarized) and remove data (in row) that don't have at least one of these features'''
+    s = data.sum(axis=0)# count frequency of each feature
+    a = array(range(len(s))) # index
+    c = [x for _, x in sorted(zip(s, a), reverse=True)][:top]  # sort from largest to smallest
+    # print s[c]
+    a = zeros(len(s))
+    a[c] = 1 # to one hot vector, a vector whose indices in c are 1 and all the other are 0
+    data_selected = []  # store selected data
+    for i in range(len(data)):
+        if dot(data[i], a) == 0:  # if dot product is 0, this means the data vector don't have at least one of these features
+            pass
+        else:
+            data_selected.append(data[i])
+    return array(data_selected)
+
+def data_readf(top):
     '''Read MIMIC-III data'''
-    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors.pkl', 'rb') as f:
+    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors.pkl', 'rb') as f: # MIMIC-III data is in GPU1
         MIMIC_ICD9 = pickle.load(f) # dictionary, each one is a list
     MIMIC_data = []
     for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
@@ -28,22 +49,25 @@ def data_readf():
         # if len(MIMIC_data) == 100:
         #     print "Break out to prevent out of memory issue"
         #     break
-    MIMIC_data = binarize(array(MIMIC_data)) # binarize, no zero
+    # MIMIC_data = age_filter(MIMIC_data) # remove those patients with age 18 or younger
+    MIMIC_data = binarize(array(MIMIC_data)) # binarize, non zero -> 1, average(MIMIC_data): , type(MIMIC_data[][]): <type 'numpy.int64'>
+    MIMIC_data = select(MIMIC_data, top) # select top 30 codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
     num_data = (MIMIC_data.shape)[0] # data number
     dim_data = (MIMIC_data.shape)[1] # data dimension
     return MIMIC_data, num_data, dim_data # (46520, 942) 46520 942 for whole dataset
 
-# MIMIC_data, num_data, dim_data = data_readf()
+# top = 30
+# MIMIC_data, num_data, dim_data = data_readf(top)
 # print MIMIC_data.shape, num_data, dim_data
 
-def loadData(dataType, _VALIDATION_RATIO):
-    MIMIC_data, num_data, dim_data = data_readf()
+def load_MIMICIII(dataType, _VALIDATION_RATIO, top):
+    MIMIC_data, num_data, dim_data = data_readf(top)
     if dataType == 'binary':
         MIMIC_data = clip(MIMIC_data, 0, 1)
     trainX, testX = train_test_split(MIMIC_data, test_size=_VALIDATION_RATIO, random_state=0)
     return trainX, testX, dim_data
 
-# trainX, testX, num_data, dim_data = loadData('binary', 0.1)
+# trainX, testX, num_data, dim_data = load_MIMICIII('binary', 0.1, 30)
 # print trainX.shape, testX.shape, num_data, dim_data
 
 def split(matrix, col):
@@ -67,6 +91,7 @@ def dwp(r, g, te):
     rv = []
     gv = []
     for i in range(len(r[0])):
+        print i
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
         f_te, t_te = split(te, i) # these 6 are all numpy array
@@ -96,6 +121,15 @@ def dwp(r, g, te):
 # plt.plot(rv, gv)
 # plt.savefig('./u.png')
 
+# # test dwp using MIMIC-III data
+# trainX, testX, _ = load_MIMICIII('binary', 0.1, 30)  # load whole dataset and split into training and testing set
+# rv, gv = dwp(trainX, trainX, testX)
+# plt.scatter(rv, gv, alpha=0.5)
+# plt.title('Scatter plot of dimension-wise MSE')
+# plt.xlabel('Real')
+# plt.ylabel('Generated')
+# plt.savefig('./result/genefinalfig/dwp.jpg')
+
 # def scale_transform(self, image):
 #     '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''
 #     im = array(image)
@@ -109,29 +143,29 @@ def dwp(r, g, te):
 #     '''compress image from rbg to grayscale, input should be numpy array'''
 #     return average(im, axis=2).reshape(64,64,1)
 
-def loaddata_face(path):
-    # for file in os.listdir(path):
-    #     print file
-    im_name = array([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
-    N = len(im_name) # count files in directory
-    # N = 10
-    image_n = zeros(shape=(N, 64, 64, 1)) # normalized image
-    for i in range(N):
-        jpgfile = Image.open(path + im_name[i])
-        # print asarray(jpgfile.getdata(),dtype=float64).shape
-        # print jpgfile.size
-        # image_n[i] = im_avg(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))
-        image_n[i] = normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],1))) # image is averaged
-    return image_n
+# def loaddata_face(path):
+#     # for file in os.listdir(path):
+#     #     print file
+#     im_name = array([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
+#     N = len(im_name) # count files in directory
+#     # N = 10
+#     image_n = zeros(shape=(N, 64, 64, 1)) # normalized image
+#     for i in range(N):
+#         jpgfile = Image.open(path + im_name[i])
+#         # print asarray(jpgfile.getdata(),dtype=float64).shape
+#         # print jpgfile.size
+#         # image_n[i] = im_avg(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],(asarray(jpgfile.getdata(),dtype=float64).shape)[1])))
+#         image_n[i] = normlization(asarray(jpgfile.getdata(),dtype=float64).reshape((jpgfile.size[1],jpgfile.size[0],1))) # image is averaged
+#     return image_n
 
 # path = "./face/CelebA/img_align_celeba_50k_1st_r_64_64_1/"
 # im = loaddata_face(path)
 
-def loaddata_face_batch(dataset, batch_size):
-    '''random select batch from whole dataset'''
-    res = dataset[random.choice(len(dataset), batch_size)]
-    # res = res.reshape((batch_size, 784))  # type(res[0][0]): numpy.float64
-    return res
+# def loaddata_face_batch(dataset, batch_size):
+#     '''random select batch from whole dataset'''
+#     res = dataset[random.choice(len(dataset), batch_size)]
+#     # res = res.reshape((batch_size, 784))  # type(res[0][0]): numpy.float64
+#     return res
 
 # batch_size = 2
 # res = loaddata_face_batch(im, batch_size)

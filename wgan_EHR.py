@@ -8,15 +8,15 @@ matplotlib.use('Agg')
 import matplotlib as plt
 import cPickle as pickle
 from numpy import arange, random, ceil, mean
-from utilize import loadData, dwp
-import logging # these 2 lines ar used in GPU3
+from utilize import load_MIMICIII, dwp
+import logging # these 2 lines are used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
 from visualize import *
 
 
 class MIMIC_WGAN(object):
-    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update): # changed
+    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update): # changed
         self.g_net = g_net
         self.d_net = d_net
         self.ae_net = ae_net
@@ -30,13 +30,15 @@ class MIMIC_WGAN(object):
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
         self.keep_prob = tf.placeholder('float')
         self._VALIDATION_RATIO = _VALIDATION_RATIO
+        self.top = top
         self.batchSize = batchSize
+        self.cilpc = cilpc
         self.n_discriminator_update = n_discriminator_update
 
         self.loss_ae, self.decodeVariables = self.ae_net(self.x) # AE, autoencoder
         self.x_ = self.g_net(self.z) # G, get generated data
         self.d_loss, self.g_loss, self.y_hat_real, self.y_hat_fake, _ = self.d_net(self.x, self.x_, self.keep_prob, self.decodeVariables, reuse=False) # D, in the beginning, no reuse
-        self.trainX, self.testX, _ = loadData(self.dataType, self._VALIDATION_RATIO) # load whole dataset and split into training and testing set
+        self.trainX, self.testX, _ = load_MIMICIII(self.dataType, self._VALIDATION_RATIO, self.top) # load whole dataset and split into training and testing set
         self.nBatches = int(ceil(float(self.trainX.shape[0]) / float(self.batchSize))) # number of batch if using training set
 
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -58,7 +60,7 @@ class MIMIC_WGAN(object):
             self.g_rmsprop = tf.train.AdamOptimizer() \
                 .minimize(self.g_loss + sum(all_regs), var_list=self.g_net.vars+self.decodeVariables.values())
 
-        self.d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in self.d_net.vars]
+        self.d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in self.d_net.vars]
         gpu_options = tf.GPUOptions(allow_growth=True)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.sess.run(tf.initialize_all_variables())
@@ -143,7 +145,7 @@ class MIMIC_WGAN(object):
 
     def loss_store(self, x_gene, rv, gv):
         '''store everything new added'''
-        t = arange(len(self.g_loss_store))
+        t = arange(len(self.wdis_store))
         plt.close() # clears the entire current figure with all its axes
         plt.plot(t, self.wdis_store, 'r--')
         plt.xlabel('Generator iterations (*10^{2})')
@@ -185,9 +187,11 @@ if __name__ == '__main__':
     pretrainBatchSize = 128 #2
     nEpochs = 1000 #2
     batchSize = 1024 #2
+    cilpc = 0.01
     n_discriminator_update = 2
     bn_train = True
     _VALIDATION_RATIO = 0.1
+    top = 30
     if dataType == 'binary':
         aeActivation = tf.nn.tanh
     else:
@@ -199,7 +203,7 @@ if __name__ == '__main__':
     ae_net = model.Autoencoder(inputDim, l2scale, compressDims, aeActivation, decompressDims, dataType)
     g_net = model.Generator(randomDim, l2scale, generatorDims, bn_train, generatorActivation, bnDecay, dataType)
     d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale)
-    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, batchSize, n_discriminator_update)
+    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update)
     wgan.train_autoencoder(pretrainEpochs, pretrainBatchSize) # Pre-training autoencoder
     x_gene, tuplerg = wgan.train(nEpochs, batchSize)
     wgan.loss_store(x_gene, tuplerg[0], tuplerg[1])
