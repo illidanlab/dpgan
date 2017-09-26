@@ -12,6 +12,7 @@ from array import array as pyarray
 from numpy import *
 from PIL import Image
 from sklearn.preprocessing import binarize
+from sklearn.metrics import f1_score
 
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
@@ -95,22 +96,27 @@ def dwp(r, g, te):
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
         f_te, t_te = split(te, i) # these 6 are all numpy array
-        reg = linear_model.LinearRegression()
-        reg.fit(f_r, t_r)
-        target_r = reg.predict(f_te)
-        reg = linear_model.LinearRegression()
-        reg.fit(f_g, t_g)
-        target_g = reg.predict(f_te)
-        rv.append(square(linalg.norm(target_r-t_te)))
-        gv.append(square(linalg.norm(target_g-t_te)))
-        # model_r = linear_model.LogisticRegression() # if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
-        # model_r.fit(f_r, t_r)
-        # label_r = model_r.predict(f_te)
-        # model_g = linear_model.LogisticRegression()
-        # model_g.fit(f_g, t_g)
-        # label_g = model_r.predict(f_te)
-        # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10)))
+        if (unique(t_r).size == 1) or (unique(t_g).size == 1):
+            continue
+        # reg = linear_model.LinearRegression() # least square error
+        # reg.fit(f_r, t_r)
+        # target_r = reg.predict(f_te)
+        # reg = linear_model.LinearRegression()
+        # reg.fit(f_g, t_g)
+        # target_g = reg.predict(f_te)
+        # rv.append(square(linalg.norm(target_r-t_te)))
+        # gv.append(square(linalg.norm(target_g-t_te)))
+
+        model_r = linear_model.LogisticRegression() # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+        model_r.fit(f_r, t_r)
+        label_r = model_r.predict(f_te)
+        model_g = linear_model.LogisticRegression()
+        model_g.fit(f_g, t_g)
+        label_g = model_r.predict(f_te)
+        # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
         # gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
+        rv.append(f1_score(t_te, label_r)) # F1 score
+        gv.append(f1_score(t_te, label_g))
     return rv, gv
 
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
@@ -122,13 +128,13 @@ def dwp(r, g, te):
 # plt.savefig('./u.png')
 
 # # test dwp using MIMIC-III data
-# trainX, testX, _ = load_MIMICIII('binary', 0.1, 30)  # load whole dataset and split into training and testing set
+# trainX, testX, _ = load_MIMICIII('binary', 0.25, 30)  # load whole dataset and split into training and testing set
 # rv, gv = dwp(trainX, trainX, testX)
-# plt.scatter(rv, gv, alpha=0.5)
+# plt.scatter(rv, gv)
 # plt.title('Scatter plot of dimension-wise MSE')
 # plt.xlabel('Real')
 # plt.ylabel('Generated')
-# plt.savefig('./result/genefinalfig/dwp.jpg')
+# plt.savefig('./dwp.jpg')
 
 # def scale_transform(self, image):
 #     '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''

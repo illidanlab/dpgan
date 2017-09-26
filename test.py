@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib import gridspec
 import cPickle as pickle
-from numpy import ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
+from numpy import unique, ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
 import os, os.path
+import random
 from PIL import Image
 from random import shuffle
 import sys, time, argparse
@@ -22,23 +23,23 @@ import shutil
 import scipy.misc
 from scipy import stats
 from tensorflow.examples.tutorials.mnist import input_data
-import numpy as np
 from sklearn.svm import SVC
 from resizeimage import resizeimage
 # import pandas as pd
 
-# df = pd.read_pickle('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/cohort.pkl')
-# with open('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/new_cohort.pkl', 'rb') as fp:
+# with open('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/dct.pkl', 'rb') as fp:
 #     data = pickle.load(fp)
 
 # test dwp using MIMIC-III data
-trainX, testX, _ = load_MIMICIII('binary', 0.1, 30)  # load whole dataset and split into training and testing set
+trainX, testX, _ = load_MIMICIII('binary', 0.25, 30)  # load whole dataset and split into training and testing set
 rv, gv = dwp(trainX, trainX, testX)
-plt.scatter(rv, gv, alpha=0.5)
+plt.scatter(rv, gv)
 plt.title('Scatter plot of dimension-wise MSE')
 plt.xlabel('Real')
 plt.ylabel('Generated')
-plt.savefig('./result/genefinalfig/dwp.jpg')
+plt.savefig('./dwp.jpg')
+
+
 
 
 '''
@@ -74,6 +75,7 @@ train = [[2,2.9],[3,3.5],[4,4],[4,2],[3,1],[1,4],[2,2]]
 gen = [2.5,2.5]
 a = [1, 2]
 b = asarray(a)
+r = array([[1,3,4,1], [2,3,5,0], [3,3,1,5], [2,5,6,11]])
 r = array([[1,3,4,1], [2,3,5,3], [3,3,1,5], [2,5,6,11]])
 r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
@@ -87,7 +89,11 @@ a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])
 a = array([1, 2, 3, 4, 5, 6])
 b = array([14, 11, 4, 12, 22, 5])
-r = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,01], [0,0,1,0,0], [0,0,0,0,0]])
+real = array([[1,1,0,1,0], [1,1,1,1,1], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
+generated = array([[1,0,0,1,0], [0,0,1,0,0], [1,1,1,1,1], [0,0,1,1,0], [0,0,0,1,0]])
+real = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
+generated = array([[1,0,0,1,0], [0,0,1,0,0], [1,1,0,1,1], [0,0,1,1,0], [0,0,0,1,0]])
+test = = array([[1,1,0,1,0], [1,0,1,0,0], [0,1,1,0,1], [0,1,1,0,0], [0,0,1,0,0]])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])

@@ -145,6 +145,10 @@ class MIMIC_WGAN(object):
 
     def loss_store(self, x_gene, rv, gv):
         '''store everything new added'''
+        with open('./result/genefinalfig/real.pickle', 'wb') as fp:
+            pickle.dump(rv, fp)
+        with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
+            pickle.dump(gv, fp)
         t = arange(len(self.wdis_store))
         plt.close() # clears the entire current figure with all its axes
         plt.plot(t, self.wdis_store, 'r--')
@@ -156,7 +160,7 @@ class MIMIC_WGAN(object):
         with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp: # store generated EHR and figures
             pickle.dump(x_gene, fp)
         plt.close()
-        plt.scatter(rv, gv, alpha=0.5)
+        plt.scatter(rv, gv)
         plt.title('Scatter plot of dimension-wise MSE')
         plt.xlabel('Real')
         plt.ylabel('Generated')
@@ -190,7 +194,7 @@ if __name__ == '__main__':
     cilpc = 0.01
     n_discriminator_update = 2
     bn_train = True
-    _VALIDATION_RATIO = 0.1
+    _VALIDATION_RATIO = 0.25
     top = 30
     if dataType == 'binary':
         aeActivation = tf.nn.tanh
