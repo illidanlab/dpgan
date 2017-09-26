@@ -24,12 +24,11 @@ def normlization(image):
 #
 #     return data_new
 
-def select(data, top):
+def select_code(data, top): # top=64, smallest one is 128, final data shape: (36228, 64)
     '''select top "top" of feature (by frequency) appears in data (binarized) and remove data (in row) that don't have at least one of these features'''
-    s = data.sum(axis=0)# count frequency of each feature
+    s = data.sum(axis=0) # count frequency of each feature
     a = array(range(len(s))) # index
-    c = [x for _, x in sorted(zip(s, a), reverse=True)][:top]  # sort from largest to smallest
-    # print s[c]
+    c = [x for _, x in sorted(zip(s, a), reverse=True)][:top]  # c contains indices correspondent to top ICD9 codes, is sorted according to frequency (from largest to smallest)
     a = zeros(len(s))
     a[c] = 1 # to one hot vector, a vector whose indices in c are 1 and all the other are 0
     data_selected = []  # store selected data
@@ -38,26 +37,28 @@ def select(data, top):
             pass
         else:
             data_selected.append(data[i])
-    return array(data_selected)
+    return sorted(c), array(data_selected) #
 
 def data_readf(top):
     '''Read MIMIC-III data'''
-    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors.pkl', 'rb') as f: # MIMIC-III data is in GPU1
+    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors.pkl', 'rb') as f: # Original MIMIC-III data is in GPU1
         MIMIC_ICD9 = pickle.load(f) # dictionary, each one is a list
     MIMIC_data = []
     for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
-        MIMIC_data.append(value)
+        if mean(value) == 0: # skip all zero vectors, each patiens should have as least one disease of course
+            continue
+        MIMIC_data.append(value) # amax(MIMIC_data): 540,
         # if len(MIMIC_data) == 100:
         #     print "Break out to prevent out of memory issue"
         #     break
     # MIMIC_data = age_filter(MIMIC_data) # remove those patients with age 18 or younger
     MIMIC_data = binarize(array(MIMIC_data)) # binarize, non zero -> 1, average(MIMIC_data): , type(MIMIC_data[][]): <type 'numpy.int64'>
-    MIMIC_data = select(MIMIC_data, top) # select top 30 codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
+    index, MIMIC_data = select_code(MIMIC_data, top) # select top "top" codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
+    MIMIC_data = MIMIC_data[:, index] # keep only those coordinates (features) correspondent to top ICD9 codes
     num_data = (MIMIC_data.shape)[0] # data number
     dim_data = (MIMIC_data.shape)[1] # data dimension
     return MIMIC_data, num_data, dim_data # (46520, 942) 46520 942 for whole dataset
 
-# top = 30
 # MIMIC_data, num_data, dim_data = data_readf(top)
 # print MIMIC_data.shape, num_data, dim_data
 
@@ -96,8 +97,10 @@ def dwp(r, g, te):
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
         f_te, t_te = split(te, i) # these 6 are all numpy array
-        if (unique(t_r).size == 1) or (unique(t_g).size == 1):
+        if (unique(t_r).size == 1) or (unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
+            print "skip this coordinate"
             continue
+
         # reg = linear_model.LinearRegression() # least square error
         # reg.fit(f_r, t_r)
         # target_r = reg.predict(f_te)
@@ -113,10 +116,12 @@ def dwp(r, g, te):
         model_g = linear_model.LogisticRegression()
         model_g.fit(f_g, t_g)
         label_g = model_r.predict(f_te)
-        # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
-        # gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
-        rv.append(f1_score(t_te, label_r)) # F1 score
-        gv.append(f1_score(t_te, label_g))
+        # print label_r
+        # print mean(model_r.coef_), count_nonzero(model_r.coef_), mean(model_g.coef_), count_nonzero(model_g.coef_) # statistics of classifiers
+        rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
+        gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
+        # rv.append(f1_score(t_te, label_r)) # F1 score
+        # gv.append(f1_score(t_te, label_g))
     return rv, gv
 
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
@@ -128,13 +133,13 @@ def dwp(r, g, te):
 # plt.savefig('./u.png')
 
 # # test dwp using MIMIC-III data
-# trainX, testX, _ = load_MIMICIII('binary', 0.25, 30)  # load whole dataset and split into training and testing set
+# trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
 # rv, gv = dwp(trainX, trainX, testX)
 # plt.scatter(rv, gv)
 # plt.title('Scatter plot of dimension-wise MSE')
 # plt.xlabel('Real')
 # plt.ylabel('Generated')
-# plt.savefig('./dwp.jpg')
+# plt.savefig('./result/genefinalfig/dwp.jpg')
 
 # def scale_transform(self, image):
 #     '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''

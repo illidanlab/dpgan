@@ -24,23 +24,24 @@ import scipy.misc
 from scipy import stats
 from tensorflow.examples.tutorials.mnist import input_data
 from sklearn.svm import SVC
-from resizeimage import resizeimage
+# from resizeimage import resizeimage
 # import pandas as pd
 
-# with open('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/dct.pkl', 'rb') as fp:
-#     data = pickle.load(fp)
+
+# f = pd.read_pickle('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/cohort.pkl')
+
+dataType = 'binary'
+_VALIDATION_RATIO = 0.25
+top = 512
 
 # test dwp using MIMIC-III data
-trainX, testX, _ = load_MIMICIII('binary', 0.25, 30)  # load whole dataset and split into training and testing set
+trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
 rv, gv = dwp(trainX, trainX, testX)
 plt.scatter(rv, gv)
 plt.title('Scatter plot of dimension-wise MSE')
 plt.xlabel('Real')
 plt.ylabel('Generated')
-plt.savefig('./dwp.jpg')
-
-
-
+plt.savefig('./result/genefinalfig/dwp.jpg')
 
 '''
 print "we need to print out something"
@@ -80,8 +81,8 @@ r = array([[1,3,4,1], [2,3,5,3], [3,3,1,5], [2,5,6,11]])
 r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
 te = array([[1,3,12,6], [2,3,4,7], [3,3,6,8], [2,5,9,0]])
-a = [3, 8, 9, 2, 12, 7]
-b = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+a = array([3, 8, 9, 2, 12, 7])
+b = array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
 b = array([4, 7, 9, 2, 12, 7])
@@ -105,6 +106,13 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
               [0.6341, 0.1403, 0.9759, 0.4064],
               [0.5918, 0.6948, 0.904, 0.3721],
               [0.0921, 0.2481, 0.1188, 0.1366]])
+
+for i in range(len(x_gene_dec)): # round the value (continuous to binary), >= 0.5: 1, <0.5: 0
+    for j in range(len(x_gene_dec[0])):
+        if x_gene_dec[i][j] >= 0.5:
+            x_gene_dec[i][j] = 1
+        else:
+            x_gene_dec[i][j] = 0
 
 # collect weights (only, no bias) in discriminator
 weights = [var for var in self.d_net.vars if "weights:0" in var.name]

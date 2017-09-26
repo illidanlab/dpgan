@@ -116,10 +116,10 @@ class MIMIC_WGAN(object):
 
         z_sample = self.z_sampler(self.trainX.shape[0], self.z_dim) # generate EHR from generator, after finish training
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
-        # print "please check this part, make sure it is correct"
-        # print self.trainX.shape, x_gene.shape, self.decoder(x_gene).shape, self.testX.shape
         self.dec = self.decoder(x_gene)
         x_gene_dec = self.sess.run(self.dec)
+        # print "please check this part, make sure it is correct"
+        # print self.trainX.shape, x_gene.shape, x_gene_dec.shape, self.testX.shape
         return x_gene_dec, dwp(self.trainX, x_gene_dec, self.testX) # Dimension-wise prediction, note that self.trainX and self.testX are numpy array but self.decoder(x_gene) is tensor
 
     def decoder(self, x_fake): # this function is specifically to make sure the output of generator goes through the decoder
@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
     # some parameters
     dataType = 'binary'
-    inputDim = 942
+    inputDim = 512
     embeddingDim = 128
     randomDim = 128
     generatorDims = list((128, 128)) + [embeddingDim]
@@ -187,15 +187,15 @@ if __name__ == '__main__':
     decompressDims = list(()) + [inputDim]
     bnDecay = 0.99
     l2scale = 0.001
-    pretrainEpochs = 100 #2
-    pretrainBatchSize = 128 #2
-    nEpochs = 1000 #2
-    batchSize = 1024 #2
+    pretrainEpochs = 100 #2, 100
+    pretrainBatchSize = 128 #2, 128
+    nEpochs = 1000 #2, 1000
+    batchSize = 1024 #2, 1024
     cilpc = 0.01
     n_discriminator_update = 2
     bn_train = True
     _VALIDATION_RATIO = 0.25
-    top = 30
+    top = 512
     if dataType == 'binary':
         aeActivation = tf.nn.tanh
     else:
