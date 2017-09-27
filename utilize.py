@@ -26,8 +26,13 @@ def normlization(image):
 
 def c2b(train, generated):
     '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0'''
+
+    if count_nonzero(generated) <= count_nonzero(train): # a special case that if the number of 1 in generated is less than train
+        putmask(generated, generated > 0, 1)
+        return generated
+
     p = float(count_nonzero(train))/train.size # percentage of nonzero elements
-    g = flip(unique(generated), 0)
+    g = sorted(generated.flatten(), reverse=True)
     idx = int(around(p*len(g)))
     v = g[idx] # any value large than this set to 1, o.w. to 0
     putmask(generated, generated<v, 0)

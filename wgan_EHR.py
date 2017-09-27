@@ -189,9 +189,9 @@ if __name__ == '__main__':
     bnDecay = 0.99
     l2scale = 0.001
     pretrainEpochs = 100 #2, 100
-    pretrainBatchSize = 128 #2, 128
+    pretrainBatchSize = 128
     nEpochs = 1000 #2, 1000
-    batchSize = 1024 #2, 1024
+    batchSize = 1024
     cilpc = 0.01
     n_discriminator_update = 2
     bn_train = True
