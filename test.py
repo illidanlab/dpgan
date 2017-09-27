@@ -24,24 +24,12 @@ import scipy.misc
 from scipy import stats
 from tensorflow.examples.tutorials.mnist import input_data
 from sklearn.svm import SVC
+import datetime
 # from resizeimage import resizeimage
 # import pandas as pd
 
 
-# f = pd.read_pickle('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/cohort.pkl')
 
-dataType = 'binary'
-_VALIDATION_RATIO = 0.25
-top = 512
-
-# test dwp using MIMIC-III data
-trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
-rv, gv = dwp(trainX, trainX, testX)
-plt.scatter(rv, gv)
-plt.title('Scatter plot of dimension-wise MSE')
-plt.xlabel('Real')
-plt.ylabel('Generated')
-plt.savefig('./result/genefinalfig/dwp.jpg')
 
 '''
 print "we need to print out something"
@@ -90,6 +78,8 @@ a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])
 a = array([1, 2, 3, 4, 5, 6])
 b = array([14, 11, 4, 12, 22, 5])
+train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
+generated = array([[10.0,3.1,4.3,3.3,6.3], [10.3,13.3,15.3,16.3,15.3], [19.3,12.3,14.2,11.3,12.3], [10.3,20.3,15.3,21.3,23.3], [24.3,25.3,30.3,31.3,40.3]])
 real = array([[1,1,0,1,0], [1,1,1,1,1], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
 generated = array([[1,0,0,1,0], [0,0,1,0,0], [1,1,1,1,1], [0,0,1,1,0], [0,0,0,1,0]])
 real = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])

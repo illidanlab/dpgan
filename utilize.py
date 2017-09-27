@@ -24,7 +24,17 @@ def normlization(image):
 #
 #     return data_new
 
-def select_code(data, top): # top=64, smallest one is 128, final data shape: (36228, 64)
+def c2b(train, generated):
+    '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0'''
+    p = float(count_nonzero(train))/train.size # percentage of nonzero elements
+    g = flip(unique(generated), 0)
+    idx = int(around(p*len(g)))
+    v = g[idx] # any value large than this set to 1, o.w. to 0
+    putmask(generated, generated<v, 0)
+    putmask(generated, generated>=v, 1)
+    return generated
+
+def select_code(data, top):
     '''select top "top" of feature (by frequency) appears in data (binarized) and remove data (in row) that don't have at least one of these features'''
     s = data.sum(axis=0) # count frequency of each feature
     a = array(range(len(s))) # index
@@ -47,13 +57,13 @@ def data_readf(top):
     for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
         if mean(value) == 0: # skip all zero vectors, each patiens should have as least one disease of course
             continue
-        MIMIC_data.append(value) # amax(MIMIC_data): 540,
+        MIMIC_data.append(value) # amax(MIMIC_data): 540
         # if len(MIMIC_data) == 100:
         #     print "Break out to prevent out of memory issue"
         #     break
     # MIMIC_data = age_filter(MIMIC_data) # remove those patients with age 18 or younger
     MIMIC_data = binarize(array(MIMIC_data)) # binarize, non zero -> 1, average(MIMIC_data): , type(MIMIC_data[][]): <type 'numpy.int64'>
-    index, MIMIC_data = select_code(MIMIC_data, top) # select top "top" codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
+    index, MIMIC_data = select_code(MIMIC_data, top) # should be done after binarize because we consider the frequency among different patients, select top codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
     MIMIC_data = MIMIC_data[:, index] # keep only those coordinates (features) correspondent to top ICD9 codes
     num_data = (MIMIC_data.shape)[0] # data number
     dim_data = (MIMIC_data.shape)[1] # data dimension
@@ -69,7 +79,7 @@ def load_MIMICIII(dataType, _VALIDATION_RATIO, top):
     trainX, testX = train_test_split(MIMIC_data, test_size=_VALIDATION_RATIO, random_state=0)
     return trainX, testX, dim_data
 
-# trainX, testX, num_data, dim_data = load_MIMICIII('binary', 0.1, 30)
+# trainX, testX, num_data, dim_data = load_MIMICIII()
 # print trainX.shape, testX.shape, num_data, dim_data
 
 def split(matrix, col):

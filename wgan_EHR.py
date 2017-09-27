@@ -8,7 +8,7 @@ matplotlib.use('Agg')
 import matplotlib as plt
 import cPickle as pickle
 from numpy import arange, random, ceil, mean
-from utilize import load_MIMICIII, dwp
+from utilize import load_MIMICIII, dwp, c2b
 import logging # these 2 lines are used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -60,7 +60,7 @@ class MIMIC_WGAN(object):
             self.g_rmsprop = tf.train.AdamOptimizer() \
                 .minimize(self.g_loss + sum(all_regs), var_list=self.g_net.vars+self.decodeVariables.values())
 
-        self.d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in self.d_net.vars]
+        # self.d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in self.d_net.vars]
         gpu_options = tf.GPUOptions(allow_growth=True)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.sess.run(tf.initialize_all_variables())
@@ -100,7 +100,7 @@ class MIMIC_WGAN(object):
                     randomZ = self.z_sampler(batchSize, self.z_dim)
                     #_, rd_loss = self.sess.run([self.d_rmsprop_new, self.d_loss], feed_dict={self.x: batchX, self.z: randomZ}) # DP case
                     _, rd_loss = self.sess.run([self.d_rmsprop, self.d_loss], feed_dict={self.x: batchX, self.z: randomZ, self.keep_prob: 1.0}) # non-DP case
-                    self.sess.run(self.d_clip)
+                    # self.sess.run(self.d_clip)
 
                 randomZ = self.z_sampler(batchSize, self.z_dim) # train generator
                 _, rg_loss = self.sess.run([self.g_rmsprop, self.g_loss], feed_dict={self.x: batchX, self.z: randomZ, self.keep_prob: 1.0})
@@ -116,8 +116,9 @@ class MIMIC_WGAN(object):
 
         z_sample = self.z_sampler(self.trainX.shape[0], self.z_dim) # generate EHR from generator, after finish training
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
-        self.dec = self.decoder(x_gene)
-        x_gene_dec = self.sess.run(self.dec)
+        dec = self.decoder(x_gene)
+        x_gene_dec = self.sess.run(dec)
+        x_gene_dec = c2b(self.trainX, x_gene_dec) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
         # print "please check this part, make sure it is correct"
         # print self.trainX.shape, x_gene.shape, x_gene_dec.shape, self.testX.shape
         return x_gene_dec, dwp(self.trainX, x_gene_dec, self.testX) # Dimension-wise prediction, note that self.trainX and self.testX are numpy array but self.decoder(x_gene) is tensor
