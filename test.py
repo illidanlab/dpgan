@@ -3,6 +3,7 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib import gridspec
+import matplotlib.mlab as mlab
 import cPickle as pickle
 from numpy import unique, ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
 import os, os.path
@@ -28,7 +29,13 @@ import datetime
 # from resizeimage import resizeimage
 # import pandas as pd
 
+with open('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/real.pickle', 'rb') as fp:
+    data = array(pickle.load(fp))
 
+num_bins = 50
+plt.hist(data, num_bins, facecolor='blue', alpha=0.5)
+plt.hist(data, num_bins, facecolor='red', alpha=0.5)
+plt.savefig('./Histogram.jpg')
 
 
 '''
