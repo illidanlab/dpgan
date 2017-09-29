@@ -28,20 +28,24 @@ def c2b(train, generated):
     '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0'''
 
     if count_nonzero(generated) <= count_nonzero(train): # special case: number of 1 in generated is <= train, all nonzero in train = 1
-        putmask(generated, generated > 0, 1)
+        putmask(generated, generated > 0, 1.0)
         return generated
 
     p = float(count_nonzero(train))/train.size # percentage of nonzero elements
     g = sorted(generated.flatten(), reverse=True)
     idx = int(around(p*len(g)))
     v = g[idx] # any value large than this set to 1, o.w. to 0
-    putmask(generated, generated<v, 0) # due to the property of putmask, must first set 0 then set 1
-    putmask(generated, generated>=v, 1)
+    # putmask(generated, generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
+    putmask(generated, generated>=v, 1.0)
+    # print "Nonzero element portion in training data:"
+    # print p
+    # print "Nonzero element portion in generated data:"
+    # print float(count_nonzero(generated))/generated.size
     return generated
 
 def select_code(data, top):
     '''select top "top" of feature (by frequency) appears in data (binarized) and remove data (in row) that don't have at least one of these features'''
-    s = data.sum(axis=0) # count frequency of each feature
+    s = data.sum(axis=0) # count frequency of each feature, amax(s): 6193, amin(s): 0
     a = array(range(len(s))) # index
     c = [x for _, x in sorted(zip(s, a), reverse=True)][:top]  # c contains indices correspondent to top ICD9 codes, is sorted according to frequency (from largest to smallest)
     a = zeros(len(s))
@@ -52,24 +56,24 @@ def select_code(data, top):
             pass
         else:
             data_selected.append(data[i])
-    return sorted(c), array(data_selected) #
+    return sorted(c), array(data_selected) # index sorted in increasing order: since it is index, should be in increasing order
 
 def data_readf(top):
     '''Read MIMIC-III data'''
-    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors.pkl', 'rb') as f: # Original MIMIC-III data is in GPU1
+    with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors_1071.pickle', 'rb') as f: # Original MIMIC-III data is in GPU1
         MIMIC_ICD9 = pickle.load(f) # dictionary, each one is a list
-    MIMIC_data = []
-    for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
-        if mean(value) == 0: # skip all zero vectors, each patiens should have as least one disease of course
-            continue
-        MIMIC_data.append(value) # amax(MIMIC_data): 540
-        # if len(MIMIC_data) == 100:
-        #     print "Break out to prevent out of memory issue"
-        #     break
+    MIMIC_data = MIMIC_ICD9 # MIMIC_data=[]
+    # for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
+    #     if mean(value) == 0.0: # skip all zero vectors, each patiens should have as least one disease of course
+    #         continue
+    #     MIMIC_data.append(value) # amax(MIMIC_data): 540
+    #     # if len(MIMIC_data) == 100:
+    #     #     print "Break out to prevent out of memory issue"
+    #     #     break
     # MIMIC_data = age_filter(MIMIC_data) # remove those patients with age 18 or younger
-    MIMIC_data = binarize(array(MIMIC_data)) # binarize, non zero -> 1, average(MIMIC_data): , type(MIMIC_data[][]): <type 'numpy.int64'>
-    index, MIMIC_data = select_code(MIMIC_data, top) # should be done after binarize because we consider the frequency among different patients, select top codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
-    MIMIC_data = MIMIC_data[:, index] # keep only those coordinates (features) correspondent to top ICD9 codes
+    # MIMIC_data = binarize(array(MIMIC_data)) # binarize, non zero -> 1, average(MIMIC_data): , type(MIMIC_data[][]): <type 'numpy.int64'>
+    # index, MIMIC_data = select_code(MIMIC_data, top) # should be done after binarize because we consider the frequency among different patients, select top codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
+    # MIMIC_data = MIMIC_data[:, index] # keep only those coordinates (features) correspondent to top ICD9 codes
     num_data = (MIMIC_data.shape)[0] # data number
     dim_data = (MIMIC_data.shape)[1] # data dimension
     return MIMIC_data, num_data, dim_data # (46520, 942) 46520 942 for whole dataset
@@ -103,18 +107,33 @@ def match(l1,l2):
             count = count + 1
     return count
 
-def dwp(r, g, te):
+def dwp(r, g, te, C=1.0):
     '''Dimension-wise prediction, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
     rv = []
     gv = []
     for i in range(len(r[0])):
         print i
+
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
         f_te, t_te = split(te, i) # these 6 are all numpy array
+        t_g[t_g < 1] = 0 # transfer non 1 to 0 (c to b)
         if (unique(t_r).size == 1) or (unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
             print "skip this coordinate"
             continue
+
+        model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+        model_r.fit(f_r, t_r)
+        label_r = model_r.predict(f_te)
+        model_g = linear_model.LogisticRegression(C=C)
+        model_g.fit(f_g, t_g)
+        label_g = model_r.predict(f_te)
+        # print label_r
+        # print mean(model_r.coef_), count_nonzero(model_r.coef_), mean(model_g.coef_), count_nonzero(model_g.coef_) # statistics of classifiers
+        # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
+        # gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
+        rv.append(f1_score(t_te, label_r)) # F1 score
+        gv.append(f1_score(t_te, label_g))
 
         # reg = linear_model.LinearRegression() # least square error
         # reg.fit(f_r, t_r)
@@ -125,18 +144,6 @@ def dwp(r, g, te):
         # rv.append(square(linalg.norm(target_r-t_te)))
         # gv.append(square(linalg.norm(target_g-t_te)))
 
-        model_r = linear_model.LogisticRegression() # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
-        model_r.fit(f_r, t_r)
-        label_r = model_r.predict(f_te)
-        model_g = linear_model.LogisticRegression()
-        model_g.fit(f_g, t_g)
-        label_g = model_r.predict(f_te)
-        # print label_r
-        # print mean(model_r.coef_), count_nonzero(model_r.coef_), mean(model_g.coef_), count_nonzero(model_g.coef_) # statistics of classifiers
-        rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
-        gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
-        # rv.append(f1_score(t_te, label_r)) # F1 score
-        # gv.append(f1_score(t_te, label_g))
     return rv, gv
 
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
@@ -155,6 +162,38 @@ def dwp(r, g, te):
 # plt.xlabel('Real')
 # plt.ylabel('Generated')
 # plt.savefig('./result/genefinalfig/dwp.jpg')
+
+
+# # detect the special case of f1 score, all 1 (perfect classification) and all 0
+# for i in range(20):
+#     trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
+#     print trainX.shape, testX.shape
+#     rv, gv = dwp(trainX, trainX, testX)
+#     rg11 = 0 # both have F1 score equal to 1
+#     rg00 = 0 # both have F1 score equal to 0
+#     for i in range(len(rv)):
+#         if rv[i] == 1 and gv[i] == 1:
+#             rg11 = rg11 + 1
+#         elif rv[i] == 0 and gv[i] == 0:
+#             rg00 = rg00 + 1
+#         else:
+#             pass
+#     print "we need to print out something"
+#     print rg11 # 12
+#     print rg00 # 52
+
+
+# # try different C
+# for j in range(10):
+#     C = 10 ** (-5) * 10 ** (j)
+#     for i in range(10):
+#         trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
+#         rv, gv = dwp(trainX, trainX, testX, C)
+#         print rv
+#         plt.close()
+#         plt.hist(rv, 10, facecolor='red', alpha=0.5)
+#         plt.savefig('./result/genefinalfig/'+str(j)+str(i)+'Histogram.jpg')
+
 
 # def scale_transform(self, image):
 #     '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''

@@ -16,7 +16,7 @@ from visualize import *
 
 
 class MIMIC_WGAN(object):
-    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update): # changed
+    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate): # changed
         self.g_net = g_net
         self.d_net = d_net
         self.ae_net = ae_net
@@ -34,6 +34,7 @@ class MIMIC_WGAN(object):
         self.batchSize = batchSize
         self.cilpc = cilpc
         self.n_discriminator_update = n_discriminator_update
+        self.learning_rate = learning_rate
 
         self.loss_ae, self.decodeVariables = self.ae_net(self.x) # AE, autoencoder
         self.x_ = self.g_net(self.z) # G, get generated data
@@ -44,7 +45,7 @@ class MIMIC_WGAN(object):
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
 
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-            self.optimize_ae = tf.train.AdamOptimizer().minimize(self.loss_ae + sum(all_regs), var_list=self.ae_net.vars)
+            self.optimize_ae = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss_ae + sum(all_regs), var_list=self.ae_net.vars)
             # self.d_rmsprop = tf.train.AdamOptimizer()  # DP case
             # grads_and_vars = self.d_rmsprop.compute_gradients(self.d_loss_reg, var_list=self.d_net.vars)
             # dp_grads_and_vars = []  # noisy version
@@ -55,9 +56,9 @@ class MIMIC_WGAN(object):
             #         g = self.dpnoise(g, self.batchSize)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
             #     dp_grads_and_vars.append((g, gv[1]))
             # self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
-            self.d_rmsprop = tf.train.AdamOptimizer() \
+            self.d_rmsprop = tf.train.AdamOptimizer(learning_rate=self.learning_rate) \
                 .minimize(self.d_loss + sum(all_regs), var_list=self.d_net.vars) # non-DP case
-            self.g_rmsprop = tf.train.AdamOptimizer() \
+            self.g_rmsprop = tf.train.AdamOptimizer(learning_rate=self.learning_rate) \
                 .minimize(self.g_loss + sum(all_regs), var_list=self.g_net.vars+self.decodeVariables.values())
 
         self.d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in self.d_net.vars]
@@ -146,8 +147,7 @@ class MIMIC_WGAN(object):
 
     def loss_store(self, x_gene, rv, gv):
         '''store everything new added'''
-        num_bins = 50
-        plt.hist(rv, num_bins, facecolor='blue', alpha=0.5)
+        num_bins = 20
         plt.hist(gv, num_bins, facecolor='red', alpha=0.5)
         plt.savefig('./result/genefinalfig/Histogram.jpg')
         plt.close() # clears the entire current figure with all its axes
@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
     # some parameters
     dataType = 'binary'
-    inputDim = 512 # 942 for original data, other: 512, 64
+    inputDim = 1071 # 942 for original data, other: 1071 (in paper), 512, 64
     embeddingDim = 128
     randomDim = 128
     generatorDims = list((128, 128)) + [embeddingDim]
@@ -199,9 +199,10 @@ if __name__ == '__main__':
     batchSize = 1024
     cilpc = 0.01
     n_discriminator_update = 2
+    learning_rate = 0.001
     bn_train = True
     _VALIDATION_RATIO = 0.25
-    top = 512 # 942 for original data, other: 512, 64
+    top = 1071 # 942 for original data, other: 1071 (in paper), 512, 64
     if dataType == 'binary':
         aeActivation = tf.nn.tanh
     else:
@@ -213,7 +214,7 @@ if __name__ == '__main__':
     ae_net = model.Autoencoder(inputDim, l2scale, compressDims, aeActivation, decompressDims, dataType)
     g_net = model.Generator(randomDim, l2scale, generatorDims, bn_train, generatorActivation, bnDecay, dataType)
     d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale)
-    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update)
+    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate)
     wgan.train_autoencoder(pretrainEpochs, pretrainBatchSize) # Pre-training autoencoder
     x_gene, tuplerg = wgan.train(nEpochs, batchSize)
     wgan.loss_store(x_gene, tuplerg[0], tuplerg[1])

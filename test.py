@@ -26,16 +26,12 @@ from scipy import stats
 from tensorflow.examples.tutorials.mnist import input_data
 from sklearn.svm import SVC
 import datetime
+from sklearn.preprocessing import binarize
 # from resizeimage import resizeimage
 # import pandas as pd
 
-with open('/home/decs/2017-DPGAN/code/wgan/MIMIC-III/real.pickle', 'rb') as fp:
-    data = array(pickle.load(fp))
 
-num_bins = 50
-plt.hist(data, num_bins, facecolor='blue', alpha=0.5)
-plt.hist(data, num_bins, facecolor='red', alpha=0.5)
-plt.savefig('./Histogram.jpg')
+
 
 
 '''
@@ -71,12 +67,18 @@ train = [[2,2.9],[3,3.5],[4,4],[4,2],[3,1],[1,4],[2,2]]
 gen = [2.5,2.5]
 a = [1, 2]
 b = asarray(a)
+r = array([[-1,1,1], [-1,-1,1], [1,-1,-1]])
+te = array([[1,-1,-1], [1,-1,1], [1,1,-1]]
+r = array([[2,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11], [0,1,1,0]])
+r = array([[1,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11]])
 r = array([[1,3,4,1], [2,3,5,0], [3,3,1,5], [2,5,6,11]])
 r = array([[1,3,4,1], [2,3,5,3], [3,3,1,5], [2,5,6,11]])
 r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
 te = array([[1,3,12,6], [2,3,4,7], [3,3,6,8], [2,5,9,0]])
 a = array([3, 8, 9, 2, 12, 7])
+rv = array([0, 0, 1, 0, 1, 1, 1, 1, 0])
+gv = array([0, 1, 1, 0, 1, 0, 1, 1, 1])
 b = array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
@@ -85,6 +87,7 @@ a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])
 a = array([1, 2, 3, 4, 5, 6])
 b = array([14, 11, 4, 12, 22, 5])
+t_g = array([[1.8,0.1,2.4,1.1], [1.2,0.3,1.5,0.6], [1.7,0.3,1.1,0.5], [0.9,0.5,0.6,0.11]])
 train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
 generated = array([[10.0,3.1,4.3,3.3,6.3], [10.3,13.3,15.3,16.3,15.3], [19.3,12.3,14.2,11.3,12.3], [10.3,20.3,15.3,21.3,23.3], [24.3,25.3,30.3,31.3,40.3]])
 train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
