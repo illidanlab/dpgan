@@ -5,7 +5,7 @@ import matplotlib.image as mpimg
 from matplotlib import gridspec
 import matplotlib.mlab as mlab
 import cPickle as pickle
-from numpy import unique, ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
+from numpy import concatenate, where, unique, ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
 import os, os.path
 import random
 from PIL import Image
@@ -29,8 +29,6 @@ import datetime
 from sklearn.preprocessing import binarize
 # from resizeimage import resizeimage
 # import pandas as pd
-
-
 
 
 
@@ -80,6 +78,7 @@ a = array([3, 8, 9, 2, 12, 7])
 rv = array([0, 0, 1, 0, 1, 1, 1, 1, 0])
 gv = array([0, 1, 1, 0, 1, 0, 1, 1, 1])
 b = array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+MIMIC_data = array([[2,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11], [0,1,1,0], [0,1,0,0], [0,1,1,0], [3,0,0,5], [1,0,1,5], [1,0,0,3]])
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
 b = array([4, 7, 9, 2, 12, 7])

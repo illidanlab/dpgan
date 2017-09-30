@@ -122,7 +122,7 @@ class Discriminator(object):
                 tempDim = discDim
             W = tf.get_variable('W', shape=[tempDim, 1])
             b = tf.get_variable('b', shape=[1])
-            y_hat = tf.squeeze(tf.nn.sigmoid(tf.add(tf.matmul(tempVec, W), b)))
+            y_hat = tf.squeeze(self.discriminatorActivation(tf.add(tf.matmul(tempVec, W), b)))
 
         return y_hat, self.name
 

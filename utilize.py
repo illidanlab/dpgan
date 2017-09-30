@@ -14,15 +14,18 @@ from PIL import Image
 from sklearn.preprocessing import binarize
 from sklearn.metrics import f1_score
 
+
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
     im = image/255.0
     return im
 
+
 # def age_filter(data):
 #     '''remove certain data points by certain property'''
 #
 #     return data_new
+
 
 def c2b(train, generated):
     '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0'''
@@ -43,6 +46,7 @@ def c2b(train, generated):
     # print float(count_nonzero(generated))/generated.size
     return generated
 
+
 def select_code(data, top):
     '''select top "top" of feature (by frequency) appears in data (binarized) and remove data (in row) that don't have at least one of these features'''
     s = data.sum(axis=0) # count frequency of each feature, amax(s): 6193, amin(s): 0
@@ -57,6 +61,7 @@ def select_code(data, top):
         else:
             data_selected.append(data[i])
     return sorted(c), array(data_selected) # index sorted in increasing order: since it is index, should be in increasing order
+
 
 def data_readf(top):
     '''Read MIMIC-III data'''
@@ -81,6 +86,7 @@ def data_readf(top):
 # MIMIC_data, num_data, dim_data = data_readf(top)
 # print MIMIC_data.shape, num_data, dim_data
 
+
 def load_MIMICIII(dataType, _VALIDATION_RATIO, top):
     MIMIC_data, num_data, dim_data = data_readf(top)
     if dataType == 'binary':
@@ -91,11 +97,13 @@ def load_MIMICIII(dataType, _VALIDATION_RATIO, top):
 # trainX, testX, num_data, dim_data = load_MIMICIII()
 # print trainX.shape, testX.shape, num_data, dim_data
 
+
 def split(matrix, col):
     '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
     t_r = matrix[:,col] # shape: (len(t_r),)
     f_r = delete(matrix, col, 1)
     return f_r, t_r
+
 
 def match(l1,l2):
     '''# count the matched position in 2 lists'''
@@ -106,6 +114,7 @@ def match(l1,l2):
         if l1[i] == l2[i]:
             count = count + 1
     return count
+
 
 def dwp(r, g, te, C=1.0):
     '''Dimension-wise prediction, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
@@ -146,6 +155,42 @@ def dwp(r, g, te, C=1.0):
 
     return rv, gv
 
+
+def load_MIMICIII2(dataType, _VALIDATION_RATIO, col):
+    '''Separate training and testing for each dimension (col), if we fix column col as label,
+    we need to take _VALIDATION_RATIO of data with label 1 and _VALIDATION_RATIO of data with label 0
+    and merge them together as testing set and the rest as training set. Then balance training set
+    by keeping whomever (0 or 1) is smaller and random select same number from the other one.
+    Finally return training and testing set'''
+    top = 1071 # dummy
+    MIMIC_data, num_data, dim_data = data_readf(top)
+    if dataType == 'binary':
+        MIMIC_data = clip(MIMIC_data, 0, 1)
+    _, c = split(MIMIC_data, col) # get column col
+    if (unique(c).size == 1): # skip column with only one class
+        print "skip this coordinate"
+        return []
+    MIMIC_data_1 = MIMIC_data[nonzero(c), :][0]  # Separate data matrix by label, label==1
+    MIMIC_data_0 = MIMIC_data[where(c == 0)[0], :]
+    trainX_1, testX_1 = train_test_split(MIMIC_data_1, test_size=_VALIDATION_RATIO, random_state=0)
+    trainX_0, testX_0 = train_test_split(MIMIC_data_0, test_size=_VALIDATION_RATIO, random_state=0)
+    testX = concatenate((testX_1, testX_0), axis=0)
+    if len(trainX_1) == len(trainX_0):
+        trainX = concatenate((trainX_1, trainX_0), axis=0)
+    elif len(trainX_1) < len(trainX_0):
+        temp_train, temp_test = train_test_split(trainX_0, test_size=len(trainX_1), random_state=0)
+        trainX = concatenate((trainX_1, temp_test), axis=0)
+    else:
+        temp_train, temp_test = train_test_split(trainX_1, test_size=len(trainX_0), random_state=0)
+        trainX = concatenate((trainX_0, temp_test), axis=0)
+
+    return trainX, testX # <type 'numpy.ndarray'> <type 'numpy.ndarray'>
+
+
+def AUC(r, g, te):
+    ''''''
+
+
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 # g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 # te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
@@ -162,7 +207,6 @@ def dwp(r, g, te, C=1.0):
 # plt.xlabel('Real')
 # plt.ylabel('Generated')
 # plt.savefig('./result/genefinalfig/dwp.jpg')
-
 
 # # detect the special case of f1 score, all 1 (perfect classification) and all 0
 # for i in range(20):
@@ -181,7 +225,6 @@ def dwp(r, g, te, C=1.0):
 #     print "we need to print out something"
 #     print rg11 # 12
 #     print rg00 # 52
-
 
 # # try different C
 # for j in range(10):
