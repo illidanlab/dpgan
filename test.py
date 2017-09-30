@@ -30,16 +30,37 @@ from sklearn.preprocessing import binarize
 # from resizeimage import resizeimage
 # import pandas as pd
 
-
+# test AUC and splitbycol
 dataType = 'binary'
 _VALIDATION_RATIO = 0.25
-col = 2
-trainX, testX = load_MIMICIII2(dataType, _VALIDATION_RATIO, col)
-print type(trainX), type(testX)
-print array(trainX).shape, array(testX).shape
+points_r = [] # store AUC points
+points_g = []
+
+top = 1071 # dummy
+MIMIC_data, _, dim_data = data_readf(top)
+for col in range(dim_data):
+    print col
+    trainX, testX = splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data)
+    if trainX == []:
+        print "skip this coordinate"
+        continue
+    auc_r, auc_g = AUC(trainX, trainX, testX, col)
+    if auc_r == []:
+        print "skip this coordinate"
+        continue
+    points_r.append(auc_r)
+    points_g.append(auc_g)
+plt.title('AUC plot')
+plt.xlabel('Real')
+plt.ylabel('Generated')
+plt.savefig('./result/genefinalfig/AUC.jpg')
+
+
+
 
 '''
 print "we need to print out something"
+print "we are here"
 print "something change"
 print "Test begin"
 print "Test end"

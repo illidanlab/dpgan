@@ -12,8 +12,7 @@ from array import array as pyarray
 from numpy import *
 from PIL import Image
 from sklearn.preprocessing import binarize
-from sklearn.metrics import f1_score
-
+from sklearn.metrics import f1_score, roc_auc_score
 
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
@@ -159,15 +158,14 @@ def dwp(r, g, te, C=1.0):
 def splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data):
     '''Separate training and testing for each dimension (col), if we fix column col as label,
     we need to take _VALIDATION_RATIO of data with label 1 and _VALIDATION_RATIO of data with label 0
-    and merge them together as testing set and the rest as training set. Then balance training set
-    by keeping whomever (0 or 1) is smaller and random select same number from the other one.
-    Finally return training and testing set'''
+    and merge them together as testing set and leave the rest. Then balance the rest as training set
+    by keeping whomever (0 or 1) is smaller and random select same number from the other one. Those left
+    in the other one are merge to testing set. Finally return training and testing set'''
     if dataType == 'binary':
         MIMIC_data = clip(MIMIC_data, 0, 1)
     _, c = split(MIMIC_data, col) # get column col
-    if (unique(c).size == 1): # skip column with only one class
-        print "skip this coordinate"
-        return []
+    if (unique(c).size == 1): # skip column: only one class
+        return [], []
     MIMIC_data_1 = MIMIC_data[nonzero(c), :][0]  # Separate data matrix by label, label==1
     MIMIC_data_0 = MIMIC_data[where(c == 0)[0], :]
     trainX_1, testX_1 = train_test_split(MIMIC_data_1, test_size=_VALIDATION_RATIO, random_state=0)
@@ -183,15 +181,56 @@ def splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data):
         temp_train, temp_test = train_test_split(trainX_1, test_size=len(trainX_0), random_state=0)
         trainX = concatenate((trainX_0, temp_test), axis=0)
         testX = concatenate((testX, temp_train), axis=0)
-
+    if ((array(trainX).shape)[0] == 0 or (array(testX).shape)[0] == 0): # skip column: no data point in training or testing set
+        return [], []
     return trainX, testX # <type 'numpy.ndarray'> <type 'numpy.ndarray'>
 
-# top = 1071 # dummy
-# MIMIC_data, num_data, dim_data = data_readf(top)
-# splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data)
 
-def AUC(r, g, te):
-    ''''''
+def AUC(r, g, te, col):
+    '''Column specific AUC'''
+    f_r, t_r = split(r, col)  # separate feature and target
+    f_g, t_g = split(g, col)
+    f_te, t_te = split(te, col)  # these 6 are all numpy array
+    t_g[t_g < 1] = 0  # transfer non 1 to 0 (c to b)
+    if (unique(t_r).size == 1) or (unique(t_g).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
+        print "skip this coordinate"
+        return [], []
+    model_r = linear_model.LogisticRegression()  # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+    print array(f_r).shape, array(t_r).shape
+    model_r.fit(f_r, t_r)
+    label_r = model_r.predict(f_te)
+    model_g = linear_model.LogisticRegression()
+    model_g.fit(f_g, t_g)
+    label_g = model_r.predict(f_te)
+    auc_r = roc_auc_score(label_r, t_te) # output is a scalar
+    auc_g = roc_auc_score(label_g, t_te)
+
+    return auc_r, auc_g
+
+# # test AUC and splitbycol
+# dataType = 'binary'
+# _VALIDATION_RATIO = 0.25
+# points_r = [] # store AUC points
+# points_g = []
+#
+# top = 1071 # dummy
+# MIMIC_data, _, dim_data = data_readf(top) # array(MIMIC_data).shape: (46520, 1071)
+# for col in range(dim_data):
+#     print col
+#     trainX, testX = splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data)
+#     if trainX == []:
+#         print "skip this coordinate"
+#         continue
+#     auc_r, auc_g = AUC(trainX, trainX, testX, col)
+#     if auc_r == []:
+#         print "skip this coordinate"
+#         continue
+#     points_r.append(auc_r)
+#     points_g.append(auc_g)
+# plt.title('AUC plot')
+# plt.xlabel('Real')
+# plt.ylabel('Generated')
+# plt.savefig('./result/genefinalfig/AUC.jpg')
 
 
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
