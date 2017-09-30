@@ -156,14 +156,12 @@ def dwp(r, g, te, C=1.0):
     return rv, gv
 
 
-def load_MIMICIII2(dataType, _VALIDATION_RATIO, col):
+def splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data):
     '''Separate training and testing for each dimension (col), if we fix column col as label,
     we need to take _VALIDATION_RATIO of data with label 1 and _VALIDATION_RATIO of data with label 0
     and merge them together as testing set and the rest as training set. Then balance training set
     by keeping whomever (0 or 1) is smaller and random select same number from the other one.
     Finally return training and testing set'''
-    top = 1071 # dummy
-    MIMIC_data, num_data, dim_data = data_readf(top)
     if dataType == 'binary':
         MIMIC_data = clip(MIMIC_data, 0, 1)
     _, c = split(MIMIC_data, col) # get column col
@@ -180,12 +178,17 @@ def load_MIMICIII2(dataType, _VALIDATION_RATIO, col):
     elif len(trainX_1) < len(trainX_0):
         temp_train, temp_test = train_test_split(trainX_0, test_size=len(trainX_1), random_state=0)
         trainX = concatenate((trainX_1, temp_test), axis=0)
+        testX = concatenate((testX, temp_train), axis=0) # don't waste, add to test
     else:
         temp_train, temp_test = train_test_split(trainX_1, test_size=len(trainX_0), random_state=0)
         trainX = concatenate((trainX_0, temp_test), axis=0)
+        testX = concatenate((testX, temp_train), axis=0)
 
     return trainX, testX # <type 'numpy.ndarray'> <type 'numpy.ndarray'>
 
+# top = 1071 # dummy
+# MIMIC_data, num_data, dim_data = data_readf(top)
+# splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data)
 
 def AUC(r, g, te):
     ''''''

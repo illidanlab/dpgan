@@ -31,6 +31,12 @@ from sklearn.preprocessing import binarize
 # import pandas as pd
 
 
+dataType = 'binary'
+_VALIDATION_RATIO = 0.25
+col = 2
+trainX, testX = load_MIMICIII2(dataType, _VALIDATION_RATIO, col)
+print type(trainX), type(testX)
+print array(trainX).shape, array(testX).shape
 
 '''
 print "we need to print out something"
