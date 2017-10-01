@@ -27,14 +27,22 @@ from tensorflow.examples.tutorials.mnist import input_data
 from sklearn.svm import SVC
 import datetime
 from sklearn.preprocessing import binarize
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 # from resizeimage import resizeimage
 # import pandas as pd
 
-# test AUC and splitbycol
+
+# test statistics using splitbycol
 dataType = 'binary'
 _VALIDATION_RATIO = 0.25
-points_r = [] # store AUC points
-points_g = []
+precision_r_all = []
+precision_g_all = []
+recall_r_all = []
+recall_g_all = []
+f1score_r_all = []
+f1score_g_all = []
+auc_r_all = []
+auc_g_all = []
 
 top = 1071 # dummy
 MIMIC_data, _, dim_data = data_readf(top)
@@ -44,17 +52,66 @@ for col in range(dim_data):
     if trainX == []:
         print "skip this coordinate"
         continue
-    auc_r, auc_g = AUC(trainX, trainX, testX, col)
-    if auc_r == []:
+    precision_r, precision_g, recall_r, recall_g, f1score_r, f1score_g, auc_r, auc_g = statistics(trainX, trainX, testX, col)
+    if precision_r == []:
         print "skip this coordinate"
         continue
-    points_r.append(auc_r)
-    points_g.append(auc_g)
-plt.title('AUC plot')
-plt.xlabel('Real')
-plt.ylabel('Generated')
-plt.savefig('./result/genefinalfig/AUC.jpg')
-
+    precision_r_all.append(precision_r)
+    precision_g_all.append(precision_g)
+    recall_r_all.append(recall_r)
+    recall_g_all.append(recall_g)
+    f1score_r_all.append(f1score_r)
+    f1score_g_all.append(f1score_g)
+    auc_r_all.append(auc_r)
+    auc_g_all.append(auc_g)
+plt.hist(precision_r_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of precision on each dimension of training data, lr')
+plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_precision_r.jpg')
+plt.close()
+plt.hist(precision_g_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of precision on each dimension of generated data, lr')
+plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_precision_g.jpg')
+plt.close()
+plt.hist(recall_r_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of recall on each dimension of training data, lr')
+plt.xlabel('Recall (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_recall_r.jpg')
+plt.close()
+plt.hist(recall_g_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of recall on each dimension of generated data, lr')
+plt.xlabel('Recall (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_recall_g.jpg')
+plt.close()
+plt.hist(f1score_r_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of f1score on each dimension of training data, lr')
+plt.xlabel('f1score (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_f1score_r.jpg')
+plt.close()
+plt.hist(f1score_g_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of f1score on each dimension of generated data, lr')
+plt.xlabel('f1score (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_f1score_g.jpg')
+plt.close()
+plt.hist(auc_r_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of AUC on each dimension of training data, lr')
+plt.xlabel('AUC (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_AUC_r.jpg')
+plt.close()
+plt.hist(auc_g_all, 100, facecolor='red', alpha=0.5)
+plt.title('Histogram of AUC on each dimension of generated data, lr')
+plt.xlabel('AUC (total number: ' + str(len(precision_r_all)) + ' )')
+plt.ylabel('Frequency')
+plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
+plt.close()
 
 
 
@@ -95,8 +152,11 @@ b = asarray(a)
 r = array([[-1,1,1], [-1,-1,1], [1,-1,-1]])
 te = array([[1,-1,-1], [1,-1,1], [1,1,-1]]
 r = array([[2,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11], [0,1,1,0]])
+{ test linear_model.LogisticRegression()
+label = array([0, 1, 0, 1])
 r = array([[1,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11]])
 r = array([[1,3,4,1], [2,3,5,0], [3,3,1,5], [2,5,6,11]])
+}
 r = array([[1,3,4,1], [2,3,5,3], [3,3,1,5], [2,5,6,11]])
 r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])

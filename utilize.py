@@ -12,7 +12,7 @@ from array import array as pyarray
 from numpy import *
 from PIL import Image
 from sklearn.preprocessing import binarize
-from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
@@ -186,51 +186,30 @@ def splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data):
     return trainX, testX # <type 'numpy.ndarray'> <type 'numpy.ndarray'>
 
 
-def AUC(r, g, te, col):
-    '''Column specific AUC'''
+def statistics(r, g, te, col):
+    '''Column specific statistics (precision, recall(Sensitivity), f1-score, AUC)'''
     f_r, t_r = split(r, col)  # separate feature and target
     f_g, t_g = split(g, col)
     f_te, t_te = split(te, col)  # these 6 are all numpy array
     t_g[t_g < 1] = 0  # transfer non 1 to 0 (c to b)
     if (unique(t_r).size == 1) or (unique(t_g).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
-        print "skip this coordinate"
-        return [], []
+        return [], [], [], [], [], [], [], []
     model_r = linear_model.LogisticRegression()  # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
-    print array(f_r).shape, array(t_r).shape
     model_r.fit(f_r, t_r)
     label_r = model_r.predict(f_te)
     model_g = linear_model.LogisticRegression()
     model_g.fit(f_g, t_g)
     label_g = model_r.predict(f_te)
-    auc_r = roc_auc_score(label_r, t_te) # output is a scalar
-    auc_g = roc_auc_score(label_g, t_te)
+    precision_r = precision_score(t_te, label_r) # precision
+    precision_g = precision_score(t_te, label_g)
+    recall_r = recall_score(t_te, label_r) # recall
+    recall_g = recall_score(t_te, label_g)
+    f1score_r = f1_score(t_te, label_r)  # f1-score
+    f1score_g = f1_score(t_te, label_g)
+    auc_r = roc_auc_score(t_te, label_r) # AUC
+    auc_g = roc_auc_score(t_te, label_g)
 
-    return auc_r, auc_g
-
-# # test AUC and splitbycol
-# dataType = 'binary'
-# _VALIDATION_RATIO = 0.25
-# points_r = [] # store AUC points
-# points_g = []
-#
-# top = 1071 # dummy
-# MIMIC_data, _, dim_data = data_readf(top) # array(MIMIC_data).shape: (46520, 1071)
-# for col in range(dim_data):
-#     print col
-#     trainX, testX = splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data)
-#     if trainX == []:
-#         print "skip this coordinate"
-#         continue
-#     auc_r, auc_g = AUC(trainX, trainX, testX, col)
-#     if auc_r == []:
-#         print "skip this coordinate"
-#         continue
-#     points_r.append(auc_r)
-#     points_g.append(auc_g)
-# plt.title('AUC plot')
-# plt.xlabel('Real')
-# plt.ylabel('Generated')
-# plt.savefig('./result/genefinalfig/AUC.jpg')
+    return precision_r, precision_g, recall_r, recall_g, f1score_r, f1score_g, auc_r, auc_g
 
 
 # r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
@@ -268,7 +247,7 @@ def AUC(r, g, te, col):
 #     print rg11 # 12
 #     print rg00 # 52
 
-# # try different C
+# # cross validation on C
 # for j in range(10):
 #     C = 10 ** (-5) * 10 ** (j)
 #     for i in range(10):
@@ -279,6 +258,86 @@ def AUC(r, g, te, col):
 #         plt.hist(rv, 10, facecolor='red', alpha=0.5)
 #         plt.savefig('./result/genefinalfig/'+str(j)+str(i)+'Histogram.jpg')
 
+# # test statistics using splitbycol
+# dataType = 'binary'
+# _VALIDATION_RATIO = 0.25
+# precision_r_all = []
+# precision_g_all = []
+# recall_r_all = []
+# recall_g_all = []
+# f1score_r_all = []
+# f1score_g_all = []
+# auc_r_all = []
+# auc_g_all = []
+#
+# top = 1071 # dummy
+# MIMIC_data, _, dim_data = data_readf(top)
+# for col in range(dim_data):
+#     print col
+#     trainX, testX = splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data)
+#     if trainX == []:
+#         print "skip this coordinate"
+#         continue
+#     precision_r, precision_g, recall_r, recall_g, f1score_r, f1score_g, auc_r, auc_g = statistics(trainX, trainX, testX, col)
+#     if precision_r == []:
+#         print "skip this coordinate"
+#         continue
+#     precision_r_all.append(precision_r)
+#     precision_g_all.append(precision_g)
+#     recall_r_all.append(recall_r)
+#     recall_g_all.append(recall_g)
+#     f1score_r_all.append(f1score_r)
+#     f1score_g_all.append(f1score_g)
+#     auc_r_all.append(auc_r)
+#     auc_g_all.append(auc_g)
+# plt.hist(precision_r_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of precision on each dimension of training data, lr')
+# plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_precision_r.jpg')
+# plt.close()
+# plt.hist(precision_g_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of precision on each dimension of generated data, lr')
+# plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_precision_g.jpg')
+# plt.close()
+# plt.hist(recall_r_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of recall on each dimension of training data, lr')
+# plt.xlabel('Recall (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_recall_r.jpg')
+# plt.close()
+# plt.hist(recall_g_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of recall on each dimension of generated data, lr')
+# plt.xlabel('Recall (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_recall_g.jpg')
+# plt.close()
+# plt.hist(f1score_r_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of f1score on each dimension of training data, lr')
+# plt.xlabel('f1score (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_f1score_r.jpg')
+# plt.close()
+# plt.hist(f1score_g_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of f1score on each dimension of generated data, lr')
+# plt.xlabel('f1score (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_f1score_g.jpg')
+# plt.close()
+# plt.hist(auc_r_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of AUC on each dimension of training data, lr')
+# plt.xlabel('AUC (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_AUC_r.jpg')
+# plt.close()
+# plt.hist(auc_g_all, 100, facecolor='red', alpha=0.5)
+# plt.title('Histogram of AUC on each dimension of generated data, lr')
+# plt.xlabel('AUC (total number: ' + str(len(precision_r_all)) + ' )')
+# plt.ylabel('Frequency')
+# plt.savefig('./hist_AUC_g.jpg')
+# plt.close()
 
 # def scale_transform(self, image):
 #     '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''
