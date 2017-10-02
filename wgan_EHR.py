@@ -8,7 +8,7 @@ matplotlib.use('Agg')
 import matplotlib as plt
 import cPickle as pickle
 from numpy import arange, random, ceil, mean
-from utilize import load_MIMICIII, dwp, c2b
+from utilize import data_readf, c2b, splitbycol, gene_check, statistics
 import logging # these 2 lines are used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -39,15 +39,15 @@ class MIMIC_WGAN(object):
         self.loss_ae, self.decodeVariables = self.ae_net(self.x) # AE, autoencoder
         self.x_ = self.g_net(self.z) # G, get generated data
         self.d_loss, self.g_loss, self.y_hat_real, self.y_hat_fake, _ = self.d_net(self.x, self.x_, self.keep_prob, self.decodeVariables, reuse=False) # D, in the beginning, no reuse
-        self.trainX, self.testX, _ = load_MIMICIII(self.dataType, self._VALIDATION_RATIO, self.top) # load whole dataset and split into training and testing set
+        self.trainX, _, _ = data_readf(1071) # load whole dataset, top = 1071 is dummy
         self.nBatches = int(ceil(float(self.trainX.shape[0]) / float(self.batchSize))) # number of batch if using training set
 
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-
+        self.reg = tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(2.5e-5),weights_list=[var for var in tf.global_variables() if 'weights' in var.name])
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-            self.optimize_ae = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss_ae + sum(all_regs), var_list=self.ae_net.vars)
-            # self.d_rmsprop = tf.train.AdamOptimizer()  # DP case
-            # grads_and_vars = self.d_rmsprop.compute_gradients(self.d_loss_reg, var_list=self.d_net.vars)
+            self.optimize_ae = tf.train.AdamOptimizer().minimize(self.loss_ae + sum(all_regs), var_list=self.ae_net.vars)
+            # self.d_rmsprop = tf.train.RMSPropOptimizer()  # DP case
+            # grads_and_vars = self.d_rmsprop.compute_gradients(self.d_loss + self.reg, var_list=self.d_net.vars)
             # dp_grads_and_vars = []  # noisy version
             # for gv in grads_and_vars:  # for each pair
             #     g = gv[0]  # get the gradient, type in loop one: Tensor("gradients/AddN_37:0", shape=(4, 4, 1, 64), dtype=float32)
@@ -56,10 +56,10 @@ class MIMIC_WGAN(object):
             #         g = self.dpnoise(g, self.batchSize)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
             #     dp_grads_and_vars.append((g, gv[1]))
             # self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
-            self.d_rmsprop = tf.train.AdamOptimizer(learning_rate=self.learning_rate) \
-                .minimize(self.d_loss + sum(all_regs), var_list=self.d_net.vars) # non-DP case
-            self.g_rmsprop = tf.train.AdamOptimizer(learning_rate=self.learning_rate) \
-                .minimize(self.g_loss + sum(all_regs), var_list=self.g_net.vars+self.decodeVariables.values())
+            self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate) \
+                .minimize(self.d_loss + self.reg, var_list=self.d_net.vars) # non-DP case
+            self.g_rmsprop = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate) \
+                .minimize(self.g_loss + self.reg, var_list=self.g_net.vars+self.decodeVariables.values())
 
         self.d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in self.d_net.vars]
         gpu_options = tf.GPUOptions(allow_growth=True)
@@ -72,7 +72,7 @@ class MIMIC_WGAN(object):
     def train_autoencoder(self, pretrainEpochs, pretrainBatchSize):
         '''Pre-training autoencoder'''
         nTrainBatches = int(ceil(float(self.trainX.shape[0])) / float(pretrainBatchSize))
-        nTestBatches = int(ceil(float(self.testX.shape[0])) / float(pretrainBatchSize))
+        # nTestBatches = int(ceil(float(self.testX.shape[0])) / float(pretrainBatchSize))
         for epoch in range(pretrainEpochs):
             idx = random.permutation(self.trainX.shape[0]) # shuffle training data in each epoch
             trainLossVec = []
@@ -80,13 +80,13 @@ class MIMIC_WGAN(object):
                 batchX = self.trainX[idx[i * pretrainBatchSize:(i + 1) * pretrainBatchSize]]
                 _, loss = self.sess.run([self.optimize_ae, self.loss_ae], feed_dict={self.x: batchX})
                 trainLossVec.append(loss)
-            idx = random.permutation(self.testX.shape[0])
-            testLossVec = []
-            for i in range(nTestBatches):
-                batchX = self.testX[idx[i * pretrainBatchSize:(i + 1) * pretrainBatchSize]]
-                loss = self.sess.run(self.loss_ae, feed_dict={self.x: batchX})
-                testLossVec.append(loss)
-            print 'Pretrain_Epoch:%d, trainLoss:%f, validLoss:%f' % (epoch, mean(trainLossVec), mean(testLossVec))
+            # idx = random.permutation(self.testX.shape[0])
+            # testLossVec = []
+            # for i in range(nTestBatches):
+            #     batchX = self.testX[idx[i * pretrainBatchSize:(i + 1) * pretrainBatchSize]]
+            #     loss = self.sess.run(self.loss_ae, feed_dict={self.x: batchX})
+            #     testLossVec.append(loss)
+            print 'Pretrain_Epoch:%d, trainLoss:%f' % (epoch, mean(trainLossVec))
 
     def train(self, nEpochs, batchSize):
         start_time = time.time()
@@ -118,11 +118,11 @@ class MIMIC_WGAN(object):
         z_sample = self.z_sampler(self.trainX.shape[0], self.z_dim) # generate EHR from generator, after finish training
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
         dec = self.decoder(x_gene)
-        x_gene_dec = self.sess.run(dec)
-        x_gene_dec = c2b(self.trainX, x_gene_dec) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
+        x_gene_dec = self.sess.run(dec) # generated data
+        # x_gene_dec = c2b(self.trainX, x_gene_dec) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
         # print "please check this part, make sure it is correct"
         # print self.trainX.shape, x_gene.shape, x_gene_dec.shape, self.testX.shape
-        return x_gene_dec, dwp(self.trainX, x_gene_dec, self.testX) # Dimension-wise prediction, note that self.trainX and self.testX are numpy array but self.decoder(x_gene) is tensor
+        return self.trainX, x_gene_dec
 
     def decoder(self, x_fake): # this function is specifically to make sure the output of generator goes through the decoder
         tempVec = x_fake
@@ -145,32 +145,106 @@ class MIMIC_WGAN(object):
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
 
-    def loss_store(self, x_gene, rv, gv):
+    def loss_store(self, x_train, x_gene):
         '''store everything new added'''
-        num_bins = 20
-        plt.hist(gv, num_bins, facecolor='red', alpha=0.5)
-        plt.savefig('./result/genefinalfig/Histogram.jpg')
-        plt.close() # clears the entire current figure with all its axes
-        with open('./result/genefinalfig/real.pickle', 'wb') as fp:
-            pickle.dump(rv, fp)
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
-            pickle.dump(gv, fp)
-        t = arange(len(self.wdis_store))
-        plt.close()
-        plt.plot(t, self.wdis_store, 'r--')
-        plt.xlabel('Generator iterations (*10^{2})')
-        plt.ylabel('Wasserstein distance')
-        plt.savefig('./result/lossfig/wdis.jpg')
-        with open('./result/lossfile/wdis.pckl', 'wb') as fp:
-            pickle.dump(self.wdis_store, fp)
-        with open('./result/genefinalfig/x_gene.pickle', 'wb') as fp: # store generated EHR and figures
             pickle.dump(x_gene, fp)
+        precision_r_all = []
+        precision_g_all = []
+        recall_r_all = []
+        recall_g_all = []
+        acc_r_all = []
+        acc_g_all = []
+        f1score_r_all = []
+        f1score_g_all = []
+        auc_r_all = []
+        auc_g_all = []
+        MIMIC_data, dim_data = x_train, len(x_train[0])
+        for col in range(dim_data):
+            print col
+            trainX, testX = splitbycol(self.dataType, self._VALIDATION_RATIO, col, MIMIC_data)
+            if trainX == []:
+                print "skip this coordinate"
+                continue
+            geneX = gene_check(col, x_gene) # process generated data by column
+            if geneX == []:
+                print "skip this coordinate"
+                continue
+            precision_r, precision_g, recall_r, recall_g, acc_r, acc_g, f1score_r, f1score_g, auc_r, auc_g = statistics(trainX, geneX, testX, col)
+            if precision_r == []:
+                print "skip this coordinate"
+                continue
+            precision_r_all.append(precision_r)
+            precision_g_all.append(precision_g)
+            recall_r_all.append(recall_r)
+            recall_g_all.append(recall_g)
+            acc_r_all.append(acc_r)
+            acc_g_all.append(acc_g)
+            f1score_r_all.append(f1score_r)
+            f1score_g_all.append(f1score_g)
+            auc_r_all.append(auc_r)
+            auc_g_all.append(auc_g)
+        bins = 100
+        plt.hist(precision_r_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of precision on each dimension of training data, lr')
+        plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_precision_r.jpg')
         plt.close()
-        plt.scatter(rv, gv)
-        plt.title('Scatter plot of dimension-wise MSE')
-        plt.xlabel('Real')
-        plt.ylabel('Generated')
-        plt.savefig('./result/genefinalfig/dwp.jpg')
+        plt.hist(precision_g_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of precision on each dimension of generated data, lr')
+        plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_precision_g.jpg')
+        plt.close()
+        plt.hist(recall_r_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of recall on each dimension of training data, lr')
+        plt.xlabel('Recall (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_recall_r.jpg')
+        plt.close()
+        plt.hist(recall_g_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of recall on each dimension of generated data, lr')
+        plt.xlabel('Recall (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_recall_g.jpg')
+        plt.close()
+        plt.hist(acc_r_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of accuracy on each dimension of training data, lr')
+        plt.xlabel('Accuracy (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_acc_r.jpg')
+        plt.close()
+        plt.hist(acc_g_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of accuracy on each dimension of generated data, lr')
+        plt.xlabel('Accuracy (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_acc_g.jpg')
+        plt.close()
+        plt.hist(f1score_r_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of f1score on each dimension of training data, lr')
+        plt.xlabel('f1score (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_f1score_r.jpg')
+        plt.close()
+        plt.hist(f1score_g_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of f1score on each dimension of generated data, lr')
+        plt.xlabel('f1score (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_f1score_g.jpg')
+        plt.close()
+        plt.hist(auc_r_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of AUC on each dimension of training data, lr')
+        plt.xlabel('AUC (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_AUC_r.jpg')
+        plt.close()
+        plt.hist(auc_g_all, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of AUC on each dimension of generated data, lr')
+        plt.xlabel('AUC (total number: ' + str(len(precision_r_all)) + ' )')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
+        plt.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('')
@@ -192,14 +266,14 @@ if __name__ == '__main__':
     compressDims = list(()) + [embeddingDim]
     decompressDims = list(()) + [inputDim]
     bnDecay = 0.99
-    l2scale = 0.001
+    l2scale = 2.5e-5 # WGAN: 2.5e-5, GAN: 0.001
     pretrainEpochs = 100 #2, 100
     pretrainBatchSize = 128
     nEpochs = 1000 #2, 1000
     batchSize = 1024
     cilpc = 0.01
     n_discriminator_update = 2
-    learning_rate = 0.001
+    learning_rate = 5e-5 # GAN: 0.001
     bn_train = True
     _VALIDATION_RATIO = 0.25
     top = 1071 # 942 for original data, other: 1071 (in paper), 512, 64
@@ -216,5 +290,5 @@ if __name__ == '__main__':
     d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale)
     wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate)
     wgan.train_autoencoder(pretrainEpochs, pretrainBatchSize) # Pre-training autoencoder
-    x_gene, tuplerg = wgan.train(nEpochs, batchSize)
-    wgan.loss_store(x_gene, tuplerg[0], tuplerg[1])
+    x_train, x_gene = wgan.train(nEpochs, batchSize)
+    wgan.loss_store(x_train, x_gene)

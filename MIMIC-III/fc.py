@@ -78,20 +78,20 @@ class Generator(object):
             for i, genDim in enumerate(self.generatorDims[:-1]):
                 W = tf.get_variable('W_' + str(i), shape=[tempDim, genDim])
                 h = tf.matmul(tempVec, W)
-                h2 = batch_norm(h, decay=self.bnDecay, scale=True, is_training=self.bn_train, updates_collections=None)
+                h2 = batch_norm(h) # GAN: batch_norm(h, decay=self.bnDecay, scale=True, is_training=self.bn_train, updates_collections=None)
                 h3 = self.generatorActivation(h2)
-                tempVec = h3 + tempVec
+                # tempVec = h3 + tempVec # need in GAN
                 tempDim = genDim
             W = tf.get_variable('W' + str(i), shape=[tempDim, self.generatorDims[-1]])
             h = tf.matmul(tempVec, W)
-            h2 = batch_norm(h, decay=self.bnDecay, scale=True, is_training=self.bn_train, updates_collections=None)
+            h2 = h # GAN: batch_norm(h, decay=self.bnDecay, scale=True, is_training=self.bn_train, updates_collections=None)
 
             if self.dataType == 'binary':
-                h3 = tf.nn.tanh(h2)
+                h3 = tf.nn.sigmoid(h2) # GAN: tf.nn.tanh(h2)
             else:
                 h3 = tf.nn.relu(h2)
 
-            output = h3 + tempVec
+            output = h3 # GAN: + tempVec
         return output
 
     @property
@@ -108,21 +108,23 @@ class Discriminator(object):
         self.name = 'mimiciii/fc/d_net'
 
     def __call__(self, x_input, keepRate, reuse=False):
-        batchSize = tf.shape(x_input)[0]
-        inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input, 0), [batchSize]), (batchSize, self.inputDim))
-        tempVec = tf.concat(axis = 1, values = [x_input, inputMean]) # https://stackoverflow.com/questions/41813665/tensorflow-slim-typeerror-expected-int32-got-list-containing-tensors-of-type
-        tempDim = self.inputDim * 2
-        with tf.variable_scope(self.name, reuse=reuse, regularizer=tcl.l2_regularizer(self.l2scale)):
+        # batchSize = tf.shape(x_input)[0]
+        # inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input, 0), [batchSize]), (batchSize, self.inputDim))
+        # tempVec = tf.concat(axis = 1, values = [x_input, inputMean]) # https://stackoverflow.com/questions/41813665/tensorflow-slim-typeerror-expected-int32-got-list-containing-tensors-of-type
+        # tempDim = self.inputDim * 2 # need in GAN
+        tempVec = x_input
+        tempDim = self.inputDim # remove in GAN
+        with tf.variable_scope(self.name, reuse=reuse): # GAN: regularizer=tcl.l2_regularizer(self.l2scale)
             for i, discDim in enumerate(self.discriminatorDims[:-1]):
                 W = tf.get_variable('W_' + str(i), shape=[tempDim, discDim])
                 b = tf.get_variable('b_' + str(i), shape=[discDim])
                 h = self.discriminatorActivation(tf.add(tf.matmul(tempVec, W), b))
-                h = tf.nn.dropout(h, keepRate)
+                # h = tf.nn.dropout(h, keepRate) # need in GAN
                 tempVec = h
                 tempDim = discDim
             W = tf.get_variable('W', shape=[tempDim, 1])
             b = tf.get_variable('b', shape=[1])
-            y_hat = tf.squeeze(self.discriminatorActivation(tf.add(tf.matmul(tempVec, W), b)))
+            y_hat = tf.squeeze(tf.add(tf.matmul(tempVec, W), b)) # need sigmoid in GAN
 
         return y_hat, self.name
 
@@ -149,8 +151,8 @@ class buildDiscriminator(object):
         else:
             x_decoded = tf.nn.relu(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]), decodeVariables['aed_b_' + str(i)]))
         y_hat_fake, self.name = self.d(x_decoded, keepRate, reuse=True)
-        d_loss = -tf.reduce_mean(tf.log(y_hat_real)) - tf.reduce_mean(tf.log(1. - y_hat_fake )) # 1. - y_hat_fake will cause "unsupported operand type(s) for -: 'float' and 'tuple'" error
-        g_loss = -tf.reduce_mean(tf.log(y_hat_fake))
+        d_loss = -tf.reduce_mean(y_hat_real) + tf.reduce_mean(y_hat_fake)
+        g_loss = -tf.reduce_mean(y_hat_fake)
 
         return d_loss, g_loss, y_hat_real, y_hat_fake, x_decoded
 
