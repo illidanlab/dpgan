@@ -66,21 +66,18 @@ def data_readf(top):
     '''Read MIMIC-III data'''
     with open('/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/patient_vectors_1071.pickle', 'rb') as f: # Original MIMIC-III data is in GPU1
         MIMIC_ICD9 = pickle.load(f) # dictionary, each one is a list
-    MIMIC_data = MIMIC_ICD9 # MIMIC_data=[]
-    # for key, value in MIMIC_ICD9.iteritems(): # dictionary to numpy array
-    #     if mean(value) == 0.0: # skip all zero vectors, each patiens should have as least one disease of course
-    #         continue
-    #     MIMIC_data.append(value) # amax(MIMIC_data): 540
-    #     # if len(MIMIC_data) == 100:
-    #     #     print "Break out to prevent out of memory issue"
-    #     #     break
+    MIMIC_data = []
+    for value in MIMIC_ICD9: # dictionary to numpy array
+        if mean(value) == 0.0: # skip all zero vectors, each patiens should have as least one disease of course
+            continue
+        MIMIC_data.append(value) # amax(MIMIC_data): 540
     # MIMIC_data = age_filter(MIMIC_data) # remove those patients with age 18 or younger
     # MIMIC_data = binarize(array(MIMIC_data)) # binarize, non zero -> 1, average(MIMIC_data): , type(MIMIC_data[][]): <type 'numpy.int64'>
     # index, MIMIC_data = select_code(MIMIC_data, top) # should be done after binarize because we consider the frequency among different patients, select top codes and remove the patients that don't have at least one of these codes, see "applying deep learning to icd-9 multi-label classification from medical records"
     # MIMIC_data = MIMIC_data[:, index] # keep only those coordinates (features) correspondent to top ICD9 codes
-    num_data = (MIMIC_data.shape)[0] # data number
-    dim_data = (MIMIC_data.shape)[1] # data dimension
-    return MIMIC_data, num_data, dim_data # (46520, 942) 46520 942 for whole dataset
+    num_data = (array(MIMIC_data).shape)[0] # data number
+    dim_data = (array(MIMIC_data).shape)[1] # data dimension
+    return array(MIMIC_data), num_data, dim_data # (46520, 942) 46520 942 for whole dataset
 
 # MIMIC_data, num_data, dim_data = data_readf(top)
 # print MIMIC_data.shape, num_data, dim_data
@@ -176,7 +173,7 @@ def splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data):
     elif len(trainX_1) < len(trainX_0):
         temp_train, temp_test = train_test_split(trainX_0, test_size=len(trainX_1), random_state=0)
         trainX = concatenate((trainX_1, temp_test), axis=0)
-        # testX = concatenate((testX, temp_train), axis=0) # can't merge, test set is already balanced
+        # testX = concatenate((testX, temp_train), axis=0) # can't merge, test set is already done
     else:
         temp_train, temp_test = train_test_split(trainX_1, test_size=len(trainX_0), random_state=0)
         trainX = concatenate((trainX_0, temp_test), axis=0)
@@ -210,7 +207,7 @@ def statistics(r, g, te, col):
     '''Column specific statistics (precision, recall(Sensitivity), f1-score, AUC)'''
     f_r, t_r = split(r, col)  # separate feature and target
     f_g, t_g = split(g, col)
-    f_te, t_te = split(te, col)  # these 6 are all numpy array
+    f_te, t_te = split(te, col)  # these 6 parts are all numpy array
     t_g[t_g < 0.5] = 0  # since label is 0 and 1, decision boundary should be 0
     if (unique(t_r).size == 1) or (unique(t_g).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
         return [], [], [], [], [], [], [], []

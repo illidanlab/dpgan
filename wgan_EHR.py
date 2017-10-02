@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib as plt
 import cPickle as pickle
-from numpy import arange, random, ceil, mean
+from numpy import arange, random, ceil, mean, array, count_nonzero
 from utilize import data_readf, c2b, splitbycol, gene_check, statistics
 import logging # these 2 lines are used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
@@ -43,8 +43,14 @@ class MIMIC_WGAN(object):
         self.nBatches = int(ceil(float(self.trainX.shape[0]) / float(self.batchSize))) # number of batch if using training set
 
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-        self.reg = tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(2.5e-5),weights_list=[var for var in tf.global_variables() if 'weights' in var.name])
-        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+        # with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)): # medGAN version
+        #     self.optimize_ae = tf.train.AdamOptimizer().minimize(self.loss_ae + sum(all_regs),  var_list=self.ae_net.vars)
+        #     self.d_rmsprop = tf.train.AdamOptimizer().minimize(self.d_loss + sum(all_regs), var_list=self.d_net.vars)  # non-DP case
+        #     self.g_rmsprop = tf.train.AdamOptimizer().minimize(self.g_loss + sum(all_regs), var_list=self.g_net.vars + self.decodeVariables.values())
+
+        self.reg = tf.contrib.layers.apply_regularization(tf.contrib.layers.l1_regularizer(2.5e-5),weights_list=[var for var in tf.global_variables() if 'W' in var.name])
+
+        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)): # WGAN version, with medGAN consideration
             self.optimize_ae = tf.train.AdamOptimizer().minimize(self.loss_ae + sum(all_regs), var_list=self.ae_net.vars)
             # self.d_rmsprop = tf.train.RMSPropOptimizer()  # DP case
             # grads_and_vars = self.d_rmsprop.compute_gradients(self.d_loss + self.reg, var_list=self.d_net.vars)
@@ -78,7 +84,8 @@ class MIMIC_WGAN(object):
             trainLossVec = []
             for i in range(nTrainBatches):
                 batchX = self.trainX[idx[i * pretrainBatchSize:(i + 1) * pretrainBatchSize]]
-                _, loss = self.sess.run([self.optimize_ae, self.loss_ae], feed_dict={self.x: batchX})
+                randomZ = self.z_sampler(batchSize, self.z_dim)
+                _, loss = self.sess.run([self.optimize_ae, self.loss_ae], feed_dict={self.x: batchX, self.z: randomZ})
                 trainLossVec.append(loss)
             # idx = random.permutation(self.testX.shape[0])
             # testLossVec = []
@@ -147,8 +154,26 @@ class MIMIC_WGAN(object):
 
     def loss_store(self, x_train, x_gene):
         '''store everything new added'''
+        print "Nonzero element portion in training data:"
+        print float(count_nonzero(x_train)) / x_train.size
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
+        bins = 100
+        print "we are here"
+        plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of distribution of generated data')
+        plt.xlabel('Generated data value')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/generated_value.jpg')
+        plt.close()
+        with open('./result/lossfig/wdis.pickle', 'wb') as fp:
+            pickle.dump(self.wdis_store, fp)
+        t = arange(len(self.wdis_store))
+        plt.plot(t, self.wdis_store, 'r--')
+        plt.xlabel('Iterations')
+        plt.ylabel('Wasserstein distance')
+        plt.savefig('./result/lossfig/wdis.jpg')
+        plt.close()
         precision_r_all = []
         precision_g_all = []
         recall_r_all = []
@@ -184,7 +209,6 @@ class MIMIC_WGAN(object):
             f1score_g_all.append(f1score_g)
             auc_r_all.append(auc_r)
             auc_g_all.append(auc_g)
-        bins = 100
         plt.hist(precision_r_all, bins, facecolor='red', alpha=0.5)
         plt.title('Histogram of precision on each dimension of training data, lr')
         plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')

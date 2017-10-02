@@ -80,7 +80,7 @@ class Generator(object):
                 h = tf.matmul(tempVec, W)
                 h2 = batch_norm(h) # GAN: batch_norm(h, decay=self.bnDecay, scale=True, is_training=self.bn_train, updates_collections=None)
                 h3 = self.generatorActivation(h2)
-                # tempVec = h3 + tempVec # need in GAN
+                tempVec = h3 # GAN: + tempVec
                 tempDim = genDim
             W = tf.get_variable('W' + str(i), shape=[tempDim, self.generatorDims[-1]])
             h = tf.matmul(tempVec, W)
