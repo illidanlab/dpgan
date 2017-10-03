@@ -126,7 +126,7 @@ class MIMIC_WGAN(object):
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
         dec = self.decoder(x_gene)
         x_gene_dec = self.sess.run(dec) # generated data
-        # x_gene_dec = c2b(self.trainX, x_gene_dec) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
+        x_gene_dec = c2b(self.trainX, x_gene_dec) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
         # print "please check this part, make sure it is correct"
         # print self.trainX.shape, x_gene.shape, x_gene_dec.shape, self.testX.shape
         return self.trainX, x_gene_dec
@@ -154,12 +154,9 @@ class MIMIC_WGAN(object):
 
     def loss_store(self, x_train, x_gene):
         '''store everything new added'''
-        print "Nonzero element portion in training data:"
-        print float(count_nonzero(x_train)) / x_train.size
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
         bins = 100
-        print "we are here"
         plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
         plt.title('Histogram of distribution of generated data')
         plt.xlabel('Generated data value')
@@ -282,7 +279,7 @@ if __name__ == '__main__':
 
     # some parameters
     dataType = 'binary'
-    inputDim = 1071 # 942 for original data, other: 1071 (in paper), 512, 64
+    inputDim = 1071 # 1071 for original data, other: 1071 (in paper), 512, 64
     embeddingDim = 128
     randomDim = 128
     generatorDims = list((128, 128)) + [embeddingDim]
@@ -300,7 +297,7 @@ if __name__ == '__main__':
     learning_rate = 5e-5 # GAN: 0.001
     bn_train = True
     _VALIDATION_RATIO = 0.25
-    top = 1071 # 942 for original data, other: 1071 (in paper), 512, 64
+    top = 1071 # 1071 for original data, other: 1071 (in paper), 512, 64
     if dataType == 'binary':
         aeActivation = tf.nn.tanh
     else:

@@ -27,7 +27,7 @@ def normlization(image):
 
 
 def c2b(train, generated):
-    '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0'''
+    '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0 (or not)'''
 
     if count_nonzero(generated) <= count_nonzero(train): # special case: number of 1 in generated is <= train, all nonzero in train = 1
         putmask(generated, generated > 0, 1.0)
@@ -37,12 +37,12 @@ def c2b(train, generated):
     g = sorted(generated.flatten(), reverse=True)
     idx = int(around(p*len(g)))
     v = g[idx] # any value large than this set to 1, o.w. to 0
-    # putmask(generated, generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
+    putmask(generated, generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
     putmask(generated, generated>=v, 1.0)
-    # print "Nonzero element portion in training data:"
-    # print p
-    # print "Nonzero element portion in generated data:"
-    # print float(count_nonzero(generated))/generated.size
+    print "Nonzero element portion in training data:"
+    print p
+    print "Nonzero element portion in generated data after adjustment of c2b function:"
+    print float(count_nonzero(generated))/generated.size
     return generated
 
 
@@ -208,7 +208,8 @@ def statistics(r, g, te, col):
     f_r, t_r = split(r, col)  # separate feature and target
     f_g, t_g = split(g, col)
     f_te, t_te = split(te, col)  # these 6 parts are all numpy array
-    t_g[t_g < 0.5] = 0  # since label is 0 and 1, decision boundary should be 0
+    # t_g[t_g < 1.0] = 0  # hard decision boundary
+    # t_g[t_g >= 0.5] = 1
     if (unique(t_r).size == 1) or (unique(t_g).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
         return [], [], [], [], [], [], [], []
     model_r = linear_model.LogisticRegression()  # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
