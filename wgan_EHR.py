@@ -8,7 +8,7 @@ matplotlib.use('Agg')
 import matplotlib as plt
 import cPickle as pickle
 from numpy import arange, random, ceil, mean, array, count_nonzero
-from utilize import data_readf, c2b, splitbycol, gene_check, statistics
+from utilize import data_readf, c2b, c2bcolwise, splitbycol, gene_check, statistics
 import logging # these 2 lines are used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -16,7 +16,7 @@ from visualize import *
 
 
 class MIMIC_WGAN(object):
-    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate): # changed
+    def __init__(self, g_net, d_net, ae_net, z_sampler, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate, adj): # changed
         self.g_net = g_net
         self.d_net = d_net
         self.ae_net = ae_net
@@ -35,6 +35,7 @@ class MIMIC_WGAN(object):
         self.cilpc = cilpc
         self.n_discriminator_update = n_discriminator_update
         self.learning_rate = learning_rate
+        self.adj = adj
 
         self.loss_ae, self.decodeVariables = self.ae_net(self.x) # AE, autoencoder
         self.x_ = self.g_net(self.z) # G, get generated data
@@ -126,7 +127,7 @@ class MIMIC_WGAN(object):
         x_gene = self.sess.run(self.x_, feed_dict={self.z: z_sample})
         dec = self.decoder(x_gene)
         x_gene_dec = self.sess.run(dec) # generated data
-        x_gene_dec = c2b(self.trainX, x_gene_dec) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
+        x_gene_dec = c2bcolwise(self.trainX, x_gene_dec, self.adj) # binarize generated data by setting the same portion of elements to 1 as the training set, these elements have highest original value
         # print "please check this part, make sure it is correct"
         # print self.trainX.shape, x_gene.shape, x_gene_dec.shape, self.testX.shape
         return self.trainX, x_gene_dec
@@ -295,6 +296,7 @@ if __name__ == '__main__':
     cilpc = 0.01
     n_discriminator_update = 2
     learning_rate = 5e-5 # GAN: 0.001
+    adj = 5.0
     bn_train = True
     _VALIDATION_RATIO = 0.25
     top = 1071 # 1071 for original data, other: 1071 (in paper), 512, 64
@@ -309,7 +311,7 @@ if __name__ == '__main__':
     ae_net = model.Autoencoder(inputDim, l2scale, compressDims, aeActivation, decompressDims, dataType)
     g_net = model.Generator(randomDim, l2scale, generatorDims, bn_train, generatorActivation, bnDecay, dataType)
     d_net = model.buildDiscriminator(inputDim, discriminatorDims, discriminatorActivation, decompressDims, aeActivation, dataType, l2scale)
-    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate)
+    wgan = MIMIC_WGAN(g_net, d_net, ae_net, zs, decompressDims, aeActivation, dataType, _VALIDATION_RATIO, top, batchSize, cilpc, n_discriminator_update, learning_rate, adj)
     wgan.train_autoencoder(pretrainEpochs, pretrainBatchSize) # Pre-training autoencoder
     x_train, x_gene = wgan.train(nEpochs, batchSize)
     wgan.loss_store(x_train, x_gene)

@@ -16,7 +16,7 @@ from tensorflow.contrib.layers import batch_norm
 import matplotlib.gridspec as gridspec
 import sys, time, argparse
 import tensorflow as tf
-from utilize import *
+from utilize import data_readf, c2b, c2bcolwise, splitbycol, gene_check, statistics
 import csv
 from heapq import nsmallest
 from sklearn import linear_model
@@ -30,8 +30,6 @@ from sklearn.preprocessing import binarize
 from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, roc_auc_score
 # from resizeimage import resizeimage
 # import pandas as pd
-
-
 
 
 
@@ -80,6 +78,10 @@ t_r = array([0, 1, 0, 1])
 f_r = array([[1,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11]])
 f_te = array([[1,3,4,1], [2,3,5,0], [3,3,1,5], [2,5,6,11]])
 }
+{test c2bcolwise
+train= array([[1,0,0,1,0], [0,0,1,0,0], [1,1,0,1,1], [0,0,1,1,0], [0,0,0,1,0]])
+generated = array([[1.8,0.1,2.4,1.1,0.8], [1.2,0.3,1.5,0.6,1.2], [1.7,0.3,1.1,0.5,1.8], [0.9,0.5,0.6,0.11, 3.8], [0.9,1.5,0.6,0.11, 1.1]])
+}
 r = array([[1,3,4,1], [2,3,5,3], [3,3,1,5], [2,5,6,11]])
 r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
@@ -96,7 +98,6 @@ a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])
 a = array([1, 2, 3, 4, 5, 6])
 b = array([14, 11, 4, 12, 22, 5])
-t_g = array([[1.8,0.1,2.4,1.1], [1.2,0.3,1.5,0.6], [1.7,0.3,1.1,0.5], [0.9,0.5,0.6,0.11]])
 train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
 generated = array([[10.0,3.1,4.3,3.3,6.3], [10.3,13.3,15.3,16.3,15.3], [19.3,12.3,14.2,11.3,12.3], [10.3,20.3,15.3,21.3,23.3], [24.3,25.3,30.3,31.3,40.3]])
 train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
@@ -104,7 +105,6 @@ generated = array([[5,7,7,9,0], [6,5,2,3,4], [1,0,0,0,0], [0,0,0,0,0], [0,0,0,0,
 real = array([[1,1,0,1,0], [1,1,1,1,1], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
 generated = array([[1,0,0,1,0], [0,0,1,0,0], [1,1,1,1,1], [0,0,1,1,0], [0,0,0,1,0]])
 real = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
-generated = array([[1,0,0,1,0], [0,0,1,0,0], [1,1,0,1,1], [0,0,1,1,0], [0,0,0,1,0]])
 test = = array([[1,1,0,1,0], [1,0,1,0,0], [0,1,1,0,1], [0,1,1,0,0], [0,0,1,0,0]])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])

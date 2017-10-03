@@ -26,8 +26,8 @@ def normlization(image):
 #     return data_new
 
 
-def c2b(train, generated):
-    '''Make the same portion of elements in generated equal to 1 as in train, the rest is set to 0 (or not)'''
+def c2b(train, generated, adj):
+    '''Set the number of 1 in generated data as multiple time of in training data, the rest is set to 0 (or not)'''
 
     if count_nonzero(generated) <= count_nonzero(train): # special case: number of 1 in generated is <= train, all nonzero in train = 1
         putmask(generated, generated > 0, 1.0)
@@ -35,15 +35,44 @@ def c2b(train, generated):
 
     p = float(count_nonzero(train))/train.size # percentage of nonzero elements
     g = sorted(generated.flatten(), reverse=True)
-    idx = int(around(p*len(g)))
+    idx = int(around(adj*p*len(g))) # with adjustment
     v = g[idx] # any value large than this set to 1, o.w. to 0
     putmask(generated, generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
     putmask(generated, generated>=v, 1.0)
-    print "Nonzero element portion in training data:"
-    print p
+    print "Nonzero element portion in training data and adjustment value are:"
+    print p, adj
     print "Nonzero element portion in generated data after adjustment of c2b function:"
     print float(count_nonzero(generated))/generated.size
     return generated
+
+
+def c2bcolwise(train, generated, adj):
+    '''Set the number of 1 in each column in generated data the same as the same column in training data, the rest is set to 0'''
+    generated_new = [] # store new one
+    s = train.sum(axis=0)
+    print 'Nonzero element in each feature (coordinate) in training data: '
+    print s
+    print "Adjustment value is: " + str(adj)
+    for col in range(len(s)):
+        col_train = train[:,col]
+        col_generated = generated[:,col]
+        if count_nonzero(col_generated) <= count_nonzero(col_train): # special case: number of 1 in generated is <= train, all nonzero in train = 1
+            putmask(col_generated, generated > 0, 1.0)
+            generated_new.append(col_generated)
+            continue
+        g = sorted(col_generated, reverse=True)
+        print g
+        idx = int(adj*s[col]) # with adjustment
+        print idx
+        v = g[idx]
+        print v
+        putmask(col_generated, col_generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
+        putmask(col_generated, col_generated>=v, 1.0)
+        generated_new.append(col_generated)
+    generated_new = array(generated_new).T
+    print 'Nonzero element in each feature (coordinate) in generated data: '
+    print generated_new.sum(axis=0)
+    return generated_new
 
 
 def select_code(data, top):
