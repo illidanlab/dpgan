@@ -38,8 +38,8 @@ def c2b(train, generated, adj):
     g = sorted(generated.flatten(), reverse=True)
     idx = int(around(adj*p*len(g))) # with adjustment
     v = g[idx] # any value large than this set to 1, o.w. to 0
-    putmask(generated, generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
-    putmask(generated, generated>=v, 1.0)
+    putmask(generated, generated<=v, 0.0) # due to the property of putmask, must first set 0 then set 1
+    putmask(generated, generated>v, 1.0)
     print "Nonzero element portion in training data and adjustment value are:"
     print p, adj
     print "Nonzero element portion in generated data after adjustment of c2b function:"
@@ -58,7 +58,7 @@ def c2bcolwise(train, generated, adj):
     generated_new = [] # store new one
     s = train.sum(axis=0)
     print 'Nonzero element in each feature (coordinate) in training data: '
-    print s
+    print list(map(int, s)) # not in scientific notation
     print "Adjustment value is: " + str(adj)
     for col in range(len(s)):
         col_train = train[:,col]
@@ -70,12 +70,12 @@ def c2bcolwise(train, generated, adj):
         g = sorted(col_generated, reverse=True)
         idx = int(adj*s[col]) # with adjustment
         v = g[idx]
-        putmask(col_generated, col_generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
-        putmask(col_generated, col_generated>=v, 1.0)
+        putmask(col_generated, col_generated<=v, 0.0)
+        putmask(col_generated, col_generated>v, 1.0)
         generated_new.append(col_generated)
     generated_new = array(generated_new).T
     print 'Nonzero element in each feature (coordinate) in generated data: '
-    print generated_new.sum(axis=0)
+    print list(map(int, generated_new.sum(axis=0)))
     return generated_new
 
 

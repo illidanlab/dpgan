@@ -31,8 +31,9 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_sc
 # from resizeimage import resizeimage
 # import pandas as pd
 
-
-
+a = [1000000, 900000, 800000]
+print a
+print list(map(int, a))
 
 
 
