@@ -14,6 +14,7 @@ from PIL import Image
 from sklearn.preprocessing import binarize
 from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, roc_auc_score
 
+
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
     im = image/255.0
@@ -61,11 +62,8 @@ def c2bcolwise(train, generated, adj):
             generated_new.append(col_generated)
             continue
         g = sorted(col_generated, reverse=True)
-        print g
         idx = int(adj*s[col]) # with adjustment
-        print idx
         v = g[idx]
-        print v
         putmask(col_generated, col_generated<v, 0.0) # due to the property of putmask, must first set 0 then set 1
         putmask(col_generated, col_generated>=v, 1.0)
         generated_new.append(col_generated)

@@ -40,7 +40,7 @@ class MIMIC_WGAN(object):
         self.loss_ae, self.decodeVariables = self.ae_net(self.x) # AE, autoencoder
         self.x_ = self.g_net(self.z) # G, get generated data
         self.d_loss, self.g_loss, self.y_hat_real, self.y_hat_fake, _ = self.d_net(self.x, self.x_, self.keep_prob, self.decodeVariables, reuse=False) # D, in the beginning, no reuse
-        self.trainX, _, _ = data_readf(1071) # load whole dataset, top = 1071 is dummy
+        self.trainX, _, _ = data_readf(self.top) # load whole dataset, self.top is dummy here
         self.nBatches = int(ceil(float(self.trainX.shape[0]) / float(self.batchSize))) # number of batch if using training set
 
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -289,14 +289,14 @@ if __name__ == '__main__':
     decompressDims = list(()) + [inputDim]
     bnDecay = 0.99
     l2scale = 2.5e-5 # WGAN: 2.5e-5, GAN: 0.001
-    pretrainEpochs = 100 #2, 100
+    pretrainEpochs = 2 #2, 100
     pretrainBatchSize = 128
-    nEpochs = 1000 #2, 1000
+    nEpochs = 2 #2, 1000
     batchSize = 1024
     cilpc = 0.01
     n_discriminator_update = 2
     learning_rate = 5e-5 # GAN: 0.001
-    adj = 5.0
+    adj = 1.0
     bn_train = True
     _VALIDATION_RATIO = 0.25
     top = 1071 # 1071 for original data, other: 1071 (in paper), 512, 64
