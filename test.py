@@ -31,9 +31,15 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_sc
 # from resizeimage import resizeimage
 # import pandas as pd
 
-a = [1000000, 900000, 800000]
-print a
-print list(map(int, a))
+
+c1 = array([[1,20],[1,3],[1,50]])
+c2 = array([[1,17],[1,2],[1,50]])
+
+print sum(c1 == c2)
+print float(sum(c1 == c2))/(c1.shape[0]*c1.shape[1])
+
+
+
 
 
 
@@ -50,7 +56,8 @@ a = [1,2]
 b = 3
 a = array([1,19])
 b = array([1,51])
-c = array([[1,20],[1,3],[1,50]])
+c1 = array([[1,20],[1,3],[1,50]])
+c2 = array([[1,17],[1,2],[1,50]])
 i = [1,2,3]
 g = array([1,2])
 tr = [[1,3], [2,3], [3,3], [2,5]]
@@ -118,6 +125,8 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
               [0.6341, 0.1403, 0.9759, 0.4064],
               [0.5918, 0.6948, 0.904, 0.3721],
               [0.0921, 0.2481, 0.1188, 0.1366]])
+
+data = average(concatenate((array([data15]), array([data20])), axis=0), axis=0) # stack 2 arrays (each is 1 by 2) and average and get 1 array
 
 for i in range(len(x_gene_dec)): # round the value (continuous to binary), >= 0.5: 1, <0.5: 0
     for j in range(len(x_gene_dec[0])):

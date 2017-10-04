@@ -289,13 +289,13 @@ if __name__ == '__main__':
     decompressDims = list(()) + [inputDim]
     bnDecay = 0.99
     l2scale = 2.5e-5 # WGAN: 2.5e-5, GAN: 0.001
-    pretrainEpochs = 2 #2, 100
+    pretrainEpochs = 100 #2, 100
     pretrainBatchSize = 128
-    nEpochs = 2 #2, 1000
+    nEpochs = 1000 #2, 1000
     batchSize = 1024
     cilpc = 0.01
     n_discriminator_update = 2
-    learning_rate = 5e-5 # GAN: 0.001
+    learning_rate = 1e-5 # GAN: 0.001
     adj = 1.0
     bn_train = True
     _VALIDATION_RATIO = 0.25

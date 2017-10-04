@@ -53,7 +53,7 @@ def c2bcolwise(train, generated, adj):
     is approximately the frequent of 1 (and 0) in each feature (coordinate) x1...xd, hence it make sense to do in this way. But
     by doing so we "force" the generated data have the same portion of 1 in each feature (coordinate) no matter how the network
     is trained (even not trained), this doesn't matters since features (coordinates) are dependent, p(x1,...xd) != p(x1)*...*p(xd)
-    only setting thr frequency of 1 in each feature (coordinate) is not enough, it also relies on the training of NN to learn the
+    only setting the frequency of 1 in each feature (coordinate) is not enough, it also relies on the training of NN to learn the
     dependency among features (coordinates), i.e. conditional probability of x1...xd'''
     generated_new = [] # store new one
     s = train.sum(axis=0)
@@ -76,6 +76,8 @@ def c2bcolwise(train, generated, adj):
     generated_new = array(generated_new).T
     print 'Nonzero element in each feature (coordinate) in generated data: '
     print list(map(int, generated_new.sum(axis=0)))
+    print 'portion of element that is match between training data and generated data'
+    print float(sum(train == generated_new))/(train.shape[0]*train.shape[1])
     return generated_new
 
 
@@ -233,7 +235,7 @@ def gene_check(col, x_gene):
         geneX = concatenate((x_gene_0, temp_test), axis=0)
     if (array(geneX).shape)[0] == 0:
         return []
-    return geneX
+    return x_gene
 
 
 def statistics(r, g, te, col):
