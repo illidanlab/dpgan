@@ -48,7 +48,13 @@ def c2b(train, generated, adj):
 
 
 def c2bcolwise(train, generated, adj):
-    '''Set the number of 1 in each column in generated data the same as the same column in training data, the rest is set to 0'''
+    '''Set the number of 1 in each column in generated data the same as the same column in training data, the rest is set to 0.
+    Network learn the joint distribution p(x1,...xd), then it should also learn the marginal distribution p(x1),...,p(xd), which
+    is approximately the frequent of 1 (and 0) in each feature (coordinate) x1...xd, hence it make sense to do in this way. But
+    by doing so we "force" the generated data have the same portion of 1 in each feature (coordinate) no matter how the network
+    is trained (even not trained), this doesn't matters since features (coordinates) are dependent, p(x1,...xd) != p(x1)*...*p(xd)
+    only setting thr frequency of 1 in each feature (coordinate) is not enough, it also relies on the training of NN to learn the
+    dependency among features (coordinates), i.e. conditional probability of x1...xd'''
     generated_new = [] # store new one
     s = train.sum(axis=0)
     print 'Nonzero element in each feature (coordinate) in training data: '
