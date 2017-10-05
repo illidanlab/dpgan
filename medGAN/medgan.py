@@ -2,9 +2,12 @@ import sys, time, argparse
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score
 from tensorflow.contrib.layers import l2_regularizer
 from tensorflow.contrib.layers import batch_norm
+import matplotlib as plt
+import cPickle as pickle
+from sklearn import linear_model
 
 _VALIDATION_RATIO = 0.1
 
@@ -12,7 +15,7 @@ _VALIDATION_RATIO = 0.1
 class Medgan(object):
     def __init__(self,
                  dataType='binary',
-                 inputDim=615,
+                 inputDim=1071,
                  embeddingDim=128,
                  randomDim=128,
                  generatorDims=(128, 128),
@@ -26,7 +29,8 @@ class Medgan(object):
         self.generatorDims = list(generatorDims) + [embeddingDim]
         self.randomDim = randomDim
         self.dataType = dataType
-
+        self.db = 0.5
+        self.wdis_store = []
         if dataType == 'binary':
             self.aeActivation = tf.nn.tanh
         else:
@@ -40,14 +44,20 @@ class Medgan(object):
         self.bnDecay = bnDecay
         self.l2scale = l2scale
 
-    def loadData(self, dataPath=''):
+        dataPath = './PATIENTS.csv.matrix'
         data = np.load(dataPath)
-
         if self.dataType == 'binary':
             data = np.clip(data, 0, 1)
+        self.trainX, self.validX = train_test_split(data, test_size=_VALIDATION_RATIO, random_state=0)
 
-        trainX, validX = train_test_split(data, test_size=_VALIDATION_RATIO, random_state=0)
-        return trainX, validX
+    # def loadData(self, dataPath=''):
+    #     data = np.load(dataPath)
+    #
+    #     if self.dataType == 'binary':
+    #         data = np.clip(data, 0, 1)
+    #
+    #     trainX, validX = train_test_split(data, test_size=_VALIDATION_RATIO, random_state=0)
+    #     return trainX, validX
 
     def buildAutoencoder(self, x_input):
         decodeVariables = {}
@@ -254,7 +264,7 @@ class Medgan(object):
         loss_ae, decodeVariables = self.buildAutoencoder(x_raw)
         x_fake = self.buildGenerator(x_random, bn_train)
         loss_d, loss_g, y_hat_real, y_hat_fake = self.buildDiscriminator(x_raw, x_fake, keep_prob, decodeVariables, bn_train)
-        trainX, validX = self.loadData(dataPath)
+        # trainX, validX = self.loadData(dataPath)
 
         t_vars = tf.trainable_variables()
         ae_vars = [var for var in t_vars if 'autoencoder' in var.name]
@@ -269,28 +279,28 @@ class Medgan(object):
 
         initOp = tf.global_variables_initializer()
 
-        nBatches = int(np.ceil(float(trainX.shape[0]) / float(batchSize)))
-        saver = tf.train.Saver(max_to_keep=saveMaxKeep)
+        nBatches = int(np.ceil(float(self.trainX.shape[0]) / float(batchSize)))
+        # saver = tf.train.Saver(max_to_keep=saveMaxKeep)
         logFile = outPath + '.log'
 
         with tf.Session() as sess:
             if modelPath == '': sess.run(initOp)
-            else: saver.restore(sess, modelPath)
-            nTrainBatches = int(np.ceil(float(trainX.shape[0])) / float(pretrainBatchSize))
-            nValidBatches = int(np.ceil(float(validX.shape[0])) / float(pretrainBatchSize))
+            # else: saver.restore(sess, modelPath)
+            nTrainBatches = int(np.ceil(float(self.trainX.shape[0])) / float(pretrainBatchSize))
+            nValidBatches = int(np.ceil(float(self.validX.shape[0])) / float(pretrainBatchSize))
 
             if modelPath== '':
                 for epoch in range(pretrainEpochs):
-                    idx = np.random.permutation(trainX.shape[0])
+                    idx = np.random.permutation(self.trainX.shape[0])
                     trainLossVec = []
                     for i in range(nTrainBatches):
-                        batchX = trainX[idx[i*pretrainBatchSize:(i+1)*pretrainBatchSize]]
+                        batchX = self.trainX[idx[i*pretrainBatchSize:(i+1)*pretrainBatchSize]]
                         _, loss = sess.run([optimize_ae, loss_ae], feed_dict={x_raw:batchX})
                         trainLossVec.append(loss)
-                    idx = np.random.permutation(validX.shape[0])
+                    idx = np.random.permutation(self.validX.shape[0])
                     validLossVec = []
                     for i in range(nValidBatches):
-                        batchX = validX[idx[i*pretrainBatchSize:(i+1)*pretrainBatchSize]]
+                        batchX = self.validX[idx[i*pretrainBatchSize:(i+1)*pretrainBatchSize]]
                         loss = sess.run(loss_ae, feed_dict={x_raw:batchX})
                         validLossVec.append(loss)
                     validReverseLoss = 0.
@@ -298,29 +308,30 @@ class Medgan(object):
                     print buf
                     self.print2file(buf, logFile)
 
-            idx = np.arange(trainX.shape[0])
+            idx = np.arange(self.trainX.shape[0])
             for epoch in range(nEpochs):
                 d_loss_vec= []
                 g_loss_vec = []
                 for i in range(nBatches):
                     for _ in range(discriminatorTrainPeriod):
                         batchIdx = np.random.choice(idx, size=batchSize, replace=False)
-                        batchX = trainX[batchIdx]
+                        batchX = self.trainX[batchIdx]
                         randomX = np.random.normal(size=(batchSize, self.randomDim))
                         _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False})
                         d_loss_vec.append(discLoss)
+                        self.wdis_store.append(discLoss)
                     for _ in range(generatorTrainPeriod):
                         randomX = np.random.normal(size=(batchSize, self.randomDim))
                         _, generatorLoss = sess.run([optimize_g, loss_g], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:True})
                         g_loss_vec.append(generatorLoss)
 
-                idx = np.arange(len(validX))
-                nValidBatches = int(np.ceil(float(len(validX)) / float(batchSize)))
+                idx = np.arange(len(self.validX))
+                nValidBatches = int(np.ceil(float(len(self.validX)) / float(batchSize)))
                 validAccVec = []
                 validAucVec = []
                 for i in range(nBatches):
                     batchIdx = np.random.choice(idx, size=batchSize, replace=False)
-                    batchX = validX[batchIdx]
+                    batchX = self.validX[batchIdx]
                     randomX = np.random.normal(size=(batchSize, self.randomDim))
                     preds_real, preds_fake, = sess.run([y_hat_real, y_hat_fake], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False})
                     validAcc = self.calculateDiscAccuracy(preds_real, preds_fake)
@@ -330,9 +341,99 @@ class Medgan(object):
                 buf = 'Epoch:%d, d_loss:%f, g_loss:%f, accuracy:%f, AUC:%f' % (epoch, np.mean(d_loss_vec), np.mean(g_loss_vec), np.mean(validAccVec), np.mean(validAucVec))
                 print buf
                 self.print2file(buf, logFile)
-                savePath = saver.save(sess, outPath, global_step=epoch)
-        print  savePath
+                # savePath = saver.save(sess, outPath, global_step=epoch)
 
+            # generate data
+            z = np.random.normal(size=((self.trainX.shape)[0], self.randomDim))
+            dec = self.decoder(x_fake, decodeVariables)
+            x_gene_dec = sess.run(dec, feed_dict={x_random: z, bn_train: False, x_raw: batchX})  # generated data
+            self.loss_store2(self.trainX, x_gene_dec)
+
+        # print  savePath
+
+    def decoder(self, x_fake, decodeVariables):  # this function is specifically to make sure the output of generator goes through the decoder
+        tempVec = x_fake
+        i = 0
+        for _ in self.decompressDims[:-1]:
+            tempVec = self.aeActivation(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]),
+                                               decodeVariables['aed_b_' + str(i)]))
+            i += 1
+        if self.dataType == 'binary':
+            x_decoded = tf.nn.sigmoid(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]),
+                                             decodeVariables['aed_b_' + str(i)]))
+        else:
+            x_decoded = tf.nn.relu(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]),
+                                          decodeVariables['aed_b_' + str(i)]))
+        return x_decoded
+
+    def loss_store2(self, x_train, x_gene):
+        with open('./result/genefinalfig/x_train.pickle', 'wb') as fp:
+            pickle.dump(x_train, fp)
+        with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
+            pickle.dump(x_gene, fp)
+        bins = 100
+        plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
+        plt.title('Histogram of distribution of generated data')
+        plt.xlabel('Generated data value')
+        plt.ylabel('Frequency')
+        plt.savefig('./result/genefinalfig/generated_value.jpg')
+        plt.close()
+        with open('./result/lossfig/wdis.pickle', 'wb') as fp:
+            pickle.dump(self.wdis_store, fp)
+        t = np.arange(len(self.wdis_store))
+        plt.plot(t, self.wdis_store, 'r--')
+        plt.xlabel('Iterations')
+        plt.ylabel('Wasserstein distance')
+        plt.savefig('./result/lossfig/wdis.jpg')
+        plt.close()
+        rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
+        plt.scatter(rv_pre, gv_pre)
+        plt.title('Dimension-wise prediction, lr')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/dwp_pre.jpg')
+        plt.close()
+        plt.scatter(rv_pro, gv_pro)
+        plt.title('Dimension-wise probability, lr')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/dwp_pro.jpg')
+        plt.close()
+
+def dwp(r, g, te, db=0.5, C=1.0):
+    '''Dimension-wise prediction & dimension-wise probability, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
+    rv_pre = []
+    gv_pre = []
+    rv_pro = []
+    gv_pro = []
+    for i in range(len(r[0])):
+        print i
+        f_r, t_r = split(r, i) # separate feature and target
+        f_g, t_g = split(g, i)
+        f_te, t_te = split(te, i) # these 6 are all numpy array
+        t_g[t_g < db ] = 0  # hard decision boundary
+        t_g[t_g >= db ] = 1
+        if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
+            print "skip this coordinate"
+            continue
+        model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+        model_r.fit(f_r, t_r)
+        label_r = model_r.predict(f_te)
+        model_g = linear_model.LogisticRegression(C=C)
+        model_g.fit(f_g, t_g)
+        label_g = model_r.predict(f_te)
+        rv_pre.append(f1_score(t_te, label_r)) # F1 score
+        gv_pre.append(f1_score(t_te, label_g))
+        rv_pro.append(float(np.count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
+        gv_pro.append(float(np.count_nonzero(t_g))/len(t_g))
+
+    return rv_pre, gv_pre, rv_pro, gv_pro
+
+def split(matrix, col):
+    '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
+    t_r = matrix[:,col] # shape: (len(t_r),)
+    f_r = np.delete(matrix, col, 1)
+    return f_r, t_r
 
 def parse_arguments(parser):
     parser.add_argument('--embed_size', type=int, default=128, help='The dimension size of the embedding, which will be generated by the generator. (default value: 128)')
