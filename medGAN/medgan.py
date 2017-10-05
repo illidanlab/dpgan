@@ -373,34 +373,17 @@ class Medgan(object):
             pickle.dump(x_train, fp)
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
-        bins = 100
-        plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of distribution of generated data')
-        plt.xlabel('Generated data value')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/generated_value.jpg')
-        plt.close()
         with open('./result/lossfig/wdis.pickle', 'wb') as fp:
             pickle.dump(self.wdis_store, fp)
-        t = np.arange(len(self.wdis_store))
-        plt.plot(t, self.wdis_store, 'r--')
-        plt.xlabel('Iterations')
-        plt.ylabel('Wasserstein distance')
-        plt.savefig('./result/lossfig/wdis.jpg')
-        plt.close()
         rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
-        plt.scatter(rv_pre, gv_pre)
-        plt.title('Dimension-wise prediction, lr')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/dwp_pre.jpg')
-        plt.close()
-        plt.scatter(rv_pro, gv_pro)
-        plt.title('Dimension-wise probability, lr')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/dwp_pro.jpg')
-        plt.close()
+        with open('./result/genefinalfig/rv_pre.pickle', 'wb') as fp:
+            pickle.dump(rv_pre, fp)
+        with open('./result/genefinalfig/gv_pre.pickle', 'wb') as fp:
+            pickle.dump(gv_pre, fp)
+        with open('./result/genefinalfig/rv_pro.pickle', 'wb') as fp:
+            pickle.dump(rv_pro, fp)
+        with open('./result/genefinalfig/gv_pro.pickle', 'wb') as fp:
+            pickle.dump(gv_pro, fp)
 
 def dwp(r, g, te, db=0.5, C=1.0):
     '''Dimension-wise prediction & dimension-wise probability, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
@@ -451,8 +434,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=2, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=2, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=100, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=1000, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
