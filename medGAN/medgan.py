@@ -5,7 +5,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, f1_score
 from tensorflow.contrib.layers import l2_regularizer
 from tensorflow.contrib.layers import batch_norm
-import matplotlib as plt
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 import cPickle as pickle
 from sklearn import linear_model
 
