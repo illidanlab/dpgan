@@ -395,8 +395,8 @@ class Medgan(object):
         return t
 
     def loss_store2(self, x_train, x_gene):
-        with open('./result/genefinalfig/x_train.pickle', 'wb') as fp:
-            pickle.dump(x_train, fp)
+        # with open('./result/genefinalfig/x_train.pickle', 'wb') as fp:
+        #     pickle.dump(x_train, fp)
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
         bins = 100
