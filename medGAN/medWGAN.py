@@ -25,13 +25,16 @@ class Medgan(object):
                  compressDims=(),
                  decompressDims=(),
                  bnDecay=0.99,
-                 l2scale=0.001):
+                 l2scale=0.001,
+                 learning_rate = 5e-4):
         self.inputDim = inputDim
         self.embeddingDim = embeddingDim
         self.generatorDims = list(generatorDims) + [embeddingDim]
         self.randomDim = randomDim
         self.dataType = dataType
         self.db = 0.5
+        self.cilpc = 0.01
+        self.learning_rate = learning_rate
         self.wdis_store = []
         if dataType == 'binary':
             self.aeActivation = tf.nn.tanh
@@ -104,20 +107,20 @@ class Medgan(object):
             for i, genDim in enumerate(self.generatorDims[:-1]):
                 W = tf.get_variable('W_'+str(i), shape=[tempDim, genDim])
                 h = tf.matmul(tempVec,W)
-                h2 = batch_norm(h, decay=self.bnDecay, scale=True, is_training=bn_train, updates_collections=None)
+                h2 = batch_norm(h)
                 h3 = self.generatorActivation(h2)
-                tempVec = h3 + tempVec
+                tempVec = h3
                 tempDim = genDim
             W = tf.get_variable('W'+str(i), shape=[tempDim, self.generatorDims[-1]])
             h = tf.matmul(tempVec,W)
-            h2 = batch_norm(h, decay=self.bnDecay, scale=True, is_training=bn_train, updates_collections=None)
+            h2 = h
 
             if self.dataType == 'binary':
-                h3 = tf.nn.tanh(h2)
+                h3 = tf.nn.sigmoid(h2)
             else:
                 h3 = tf.nn.relu(h2)
 
-            output = h3 + tempVec
+            output = h3
         return output
     
     def buildGeneratorTest(self, x_input, bn_train):
@@ -127,38 +130,40 @@ class Medgan(object):
             for i, genDim in enumerate(self.generatorDims[:-1]):
                 W = tf.get_variable('W_'+str(i), shape=[tempDim, genDim])
                 h = tf.matmul(tempVec,W)
-                h2 = batch_norm(h, decay=self.bnDecay, scale=True, is_training=bn_train, updates_collections=None, trainable=False)
+                h2 = batch_norm(h)
                 h3 = self.generatorActivation(h2)
-                tempVec = h3 + tempVec
+                tempVec = h3
                 tempDim = genDim
             W = tf.get_variable('W'+str(i), shape=[tempDim, self.generatorDims[-1]])
             h = tf.matmul(tempVec,W)
-            h2 = batch_norm(h, decay=self.bnDecay, scale=True, is_training=bn_train, updates_collections=None, trainable=False)
+            h2 = h
 
             if self.dataType == 'binary':
-                h3 = tf.nn.tanh(h2)
+                h3 = tf.nn.sigmoid(h2)
             else:
                 h3 = tf.nn.relu(h2)
 
-            output = h3 + tempVec
+            output = h3
         return output
     
     def getDiscriminatorResults(self, x_input, keepRate, reuse=False):
-        batchSize = tf.shape(x_input)[0]
-        inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input,0), [batchSize]), (batchSize, self.inputDim))
-        tempVec = tf.concat(axis = 1, values = [x_input, inputMean])
-        tempDim = self.inputDim * 2
+        # batchSize = tf.shape(x_input)[0]
+        # inputMean = tf.reshape(tf.tile(tf.reduce_mean(x_input,0), [batchSize]), (batchSize, self.inputDim))
+        # tempVec = tf.concat(axis = 1, values = [x_input, inputMean])
+        # tempDim = self.inputDim * 2
+        tempVec = x_input
+        tempDim = self.inputDim
         with tf.variable_scope('discriminator', reuse=reuse, regularizer=l2_regularizer(self.l2scale)):
             for i, discDim in enumerate(self.discriminatorDims[:-1]):
                 W = tf.get_variable('W_'+str(i), shape=[tempDim, discDim])
                 b = tf.get_variable('b_'+str(i), shape=[discDim])
                 h = self.discriminatorActivation(tf.add(tf.matmul(tempVec,W),b))
-                h = tf.nn.dropout(h, keepRate)
+                # h = tf.nn.dropout(h, keepRate)
                 tempVec = h
                 tempDim = discDim
             W = tf.get_variable('W', shape=[tempDim, 1])
             b = tf.get_variable('b', shape=[1])
-            y_hat = tf.squeeze(tf.nn.sigmoid(tf.add(tf.matmul(tempVec, W), b)))
+            y_hat = tf.squeeze(tf.add(tf.matmul(tempVec, W), b))
         return y_hat
     
     def buildDiscriminator(self, x_real, x_fake, keepRate, decodeVariables, bn_train):
@@ -179,8 +184,8 @@ class Medgan(object):
 
         y_hat_fake = self.getDiscriminatorResults(x_decoded, keepRate, reuse=True)
 
-        loss_d = -tf.reduce_mean(tf.log(y_hat_real + 1e-12)) - tf.reduce_mean(tf.log(1. - y_hat_fake + 1e-12))
-        loss_g = -tf.reduce_mean(tf.log(y_hat_fake + 1e-12))
+        loss_d = -tf.reduce_mean(y_hat_real) + tf.reduce_mean(y_hat_fake)
+        loss_g = -tf.reduce_mean(y_hat_fake)
 
         return loss_d, loss_g, y_hat_real, y_hat_fake
 
@@ -276,8 +281,19 @@ class Medgan(object):
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
 
         optimize_ae = tf.train.AdamOptimizer().minimize(loss_ae + sum(all_regs), var_list=ae_vars)
-        optimize_d = tf.train.AdamOptimizer().minimize(loss_d + sum(all_regs), var_list=d_vars)
-        optimize_g = tf.train.AdamOptimizer().minimize(loss_g + sum(all_regs), var_list=g_vars+decodeVariables.values())
+        # optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)  # DP case
+        # grads_and_vars = optimize_d.compute_gradients(loss_d + sum(all_regs), var_list=d_vars)
+        # dp_grads_and_vars = []  # noisy version
+        # for gv in grads_and_vars:  # for each pair
+        #     g = gv[0]  # get the gradient
+        #     #print g # shape of all vars
+        #     if g is not None:  # skip None case
+        #         g = self.dpnoise(g, batchSize)
+        #     dp_grads_and_vars.append((g, gv[1]))
+        # optimize_d_new = optimize_d.apply_gradients(dp_grads_and_vars)
+        optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_d + sum(all_regs), var_list=d_vars)
+        optimize_g = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_g + sum(all_regs), var_list=g_vars+decodeVariables.values())
+        d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in d_vars]
 
         initOp = tf.global_variables_initializer()
 
@@ -320,6 +336,7 @@ class Medgan(object):
                         batchX = self.trainX[batchIdx]
                         randomX = np.random.normal(size=(batchSize, self.randomDim))
                         _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False})
+                        sess.run(d_clip)
                         d_loss_vec.append(discLoss)
                         self.wdis_store.append(discLoss)
                     for _ in range(generatorTrainPeriod):
@@ -367,6 +384,15 @@ class Medgan(object):
             x_decoded = tf.nn.relu(tf.add(tf.matmul(tempVec, decodeVariables['aed_W_' + str(i)]),
                                           decodeVariables['aed_b_' + str(i)]))
         return x_decoded
+
+    def dpnoise(self, tensor, batchSize):
+        '''add noise to tensor'''
+        s = tensor.get_shape().as_list()  # get shape of the tensor
+        sigma = 6000.0  # assign it manually
+        cg = 0.0
+        rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
+        t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
+        return t
 
     def loss_store2(self, x_train, x_gene):
         with open('./result/genefinalfig/x_train.pickle', 'wb') as fp:
