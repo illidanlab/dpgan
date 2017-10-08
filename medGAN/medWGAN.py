@@ -500,8 +500,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parse_arguments(parser)
 
-    data = np.load(args.data_file)
-    inputDim = data.shape[1]
+    # data = np.load(args.data_file)
+    inputDim = 1071
 
     mg = Medgan(dataType=args.data_type,
                 inputDim=inputDim,
