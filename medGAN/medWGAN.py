@@ -26,7 +26,7 @@ class Medgan(object):
                  decompressDims=(),
                  bnDecay=0.99,
                  l2scale=0.001,
-                 learning_rate = 5e-4):
+                 learning_rate = 5e-5):
         self.inputDim = inputDim
         self.embeddingDim = embeddingDim
         self.generatorDims = list(generatorDims) + [embeddingDim]
