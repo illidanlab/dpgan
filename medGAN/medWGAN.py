@@ -32,7 +32,7 @@ class Medgan(object):
         self.generatorDims = list(generatorDims) + [embeddingDim]
         self.randomDim = randomDim
         self.dataType = dataType
-        self.db = 0.5
+        self.db = 0.1
         self.cilpc = 0.01
         self.learning_rate = learning_rate
         self.wdis_store = []
@@ -338,7 +338,7 @@ class Medgan(object):
                         _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False})
                         sess.run(d_clip)
                         d_loss_vec.append(discLoss)
-                        self.wdis_store.append(discLoss)
+                        self.wdis_store.append(-1*discLoss)
                     for _ in range(generatorTrainPeriod):
                         randomX = np.random.normal(size=(batchSize, self.randomDim))
                         _, generatorLoss = sess.run([optimize_g, loss_g], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:True})
