@@ -390,7 +390,7 @@ class Medgan(object):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
         sigma = 6000.0  # assign it manually
-        cg = 0.003
+        cg = 0.001
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
@@ -400,6 +400,7 @@ class Medgan(object):
         #     pickle.dump(x_train, fp)
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
+        print "Nonzero element portion in generated data: " + str(float(np.count_nonzero(x_gene)) / (x_gene.shape[0]*x_gene.shape[1]))
         bins = 100
         plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
         plt.title('Histogram of distribution of generated data')
