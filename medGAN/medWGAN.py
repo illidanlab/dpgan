@@ -537,7 +537,7 @@ def statistics(r, g, te, db, col):
     f_te, t_te = split(te, col)  # these 6 parts are all numpy array
     t_g[t_g < db] = 0  # hard decision boundary
     t_g[t_g >= db] = 1
-    if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
+    if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1) or (np.unique(t_te).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
         return [], [], [], [], [], [], [], [], [], []
     model_r = linear_model.LogisticRegression()  # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
     model_r.fit(f_r, t_r)
