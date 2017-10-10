@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import cPickle as pickle
 from sklearn import linear_model
 
-_VALIDATION_RATIO = 0.1
+_VALIDATION_RATIO = 0.25
 
 
 class Medgan(object):
@@ -631,8 +631,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=1, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=1, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=100, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=1000, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
