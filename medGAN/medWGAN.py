@@ -397,8 +397,6 @@ class Medgan(object):
         return t
 
     def loss_store2(self, x_train, x_gene):
-        # with open('./result/genefinalfig/x_train.pickle', 'wb') as fp:
-        #     pickle.dump(x_train, fp)
         with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
         print "Nonzero element portion in generated data: " + str(float(np.count_nonzero(x_gene)) / (x_gene.shape[0]*x_gene.shape[1]))
@@ -500,6 +498,7 @@ class Medgan(object):
         plt.ylabel('Frequency')
         plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
         plt.close()
+        # scatter plot begins
         plt.scatter(precision_r_all, precision_g_all)
         plt.title('Dimension-wise prediction, precision')
         plt.xlabel('Real data')
@@ -539,7 +538,7 @@ def statistics(r, g, te, db, col):
     t_g[t_g < db] = 0  # hard decision boundary
     t_g[t_g >= db] = 1
     if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
-        return [], [], [], [], [], [], [], []
+        return [], [], [], [], [], [], [], [], [], []
     model_r = linear_model.LogisticRegression()  # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
     model_r.fit(f_r, t_r)
     label_r = model_r.predict(f_te) # decision boundary is 0
@@ -610,7 +609,6 @@ def dwp(r, g, te, db, C=1.0):
         auc_r_all.append(auc_r)
         auc_g_all.append(auc_g)
 
-    # return rv_pre, gv_pre, rv_pro, gv_pro
     return precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all
 
 def split(matrix, col):
@@ -633,8 +631,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=2, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=2, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=1, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=1, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
