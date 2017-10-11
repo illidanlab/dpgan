@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import cPickle as pickle
 from sklearn import linear_model
 
-_VALIDATION_RATIO = 0.25
+_VALIDATION_RATIO = 0.1
 
 
 class Medgan(object):
@@ -391,7 +391,7 @@ class Medgan(object):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
         sigma = 6000.0  # assign it manually
-        cg = 0.005
+        cg = 0.01
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
@@ -415,120 +415,120 @@ class Medgan(object):
         plt.ylabel('Wasserstein distance')
         plt.savefig('./result/lossfig/WGAN-W-distance.jpg')
         plt.close()
-        # rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
-        # with open('./result/genefinalfig/rv_pre.pickle', 'wb') as fp:
-        #     pickle.dump(rv_pre, fp)
-        # with open('./result/genefinalfig/gv_pre.pickle', 'wb') as fp:
-        #     pickle.dump(gv_pre, fp)
-        # with open('./result/genefinalfig/rv_pro.pickle', 'wb') as fp:
-        #     pickle.dump(rv_pro, fp)
-        # with open('./result/genefinalfig/gv_pro.pickle', 'wb') as fp:
-        #     pickle.dump(gv_pro, fp)
-        # plt.scatter(rv_pre, gv_pre)
-        # plt.title('Dimension-wise prediction, lr')
+        rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
+        with open('./result/genefinalfig/rv_pre.pickle', 'wb') as fp:
+            pickle.dump(rv_pre, fp)
+        with open('./result/genefinalfig/gv_pre.pickle', 'wb') as fp:
+            pickle.dump(gv_pre, fp)
+        with open('./result/genefinalfig/rv_pro.pickle', 'wb') as fp:
+            pickle.dump(rv_pro, fp)
+        with open('./result/genefinalfig/gv_pro.pickle', 'wb') as fp:
+            pickle.dump(gv_pro, fp)
+        plt.scatter(rv_pre, gv_pre)
+        plt.title('Dimension-wise prediction, lr')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction.jpg')
+        plt.close()
+        plt.scatter(rv_pro, gv_pro)
+        plt.title('Dimension-wise probability, lr')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-probability.jpg')
+        plt.close()
+        # precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all = dwp(x_train, x_gene, self.validX, self.db)
+        # bins = 100
+        # plt.hist(precision_r_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of precision on each dimension of training data, lr')
+        # plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_precision_r.jpg')
+        # plt.close()
+        # plt.hist(precision_g_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of precision on each dimension of generated data, lr')
+        # plt.xlabel('Precision (total number: ' + str(len(precision_g_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_precision_g.jpg')
+        # plt.close()
+        # plt.hist(recall_r_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of recall on each dimension of training data, lr')
+        # plt.xlabel('Recall (total number: ' + str(len(recall_r_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_recall_r.jpg')
+        # plt.close()
+        # plt.hist(recall_g_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of recall on each dimension of generated data, lr')
+        # plt.xlabel('Recall (total number: ' + str(len(recall_g_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_recall_g.jpg')
+        # plt.close()
+        # plt.hist(acc_r_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of accuracy on each dimension of training data, lr')
+        # plt.xlabel('Accuracy (total number: ' + str(len(acc_r_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_acc_r.jpg')
+        # plt.close()
+        # plt.hist(acc_g_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of accuracy on each dimension of generated data, lr')
+        # plt.xlabel('Accuracy (total number: ' + str(len(acc_g_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_acc_g.jpg')
+        # plt.close()
+        # plt.hist(f1score_r_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of f1score on each dimension of training data, lr')
+        # plt.xlabel('f1score (total number: ' + str(len(f1score_r_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_f1score_r.jpg')
+        # plt.close()
+        # plt.hist(f1score_g_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of f1score on each dimension of generated data, lr')
+        # plt.xlabel('f1score (total number: ' + str(len(f1score_g_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_f1score_g.jpg')
+        # plt.close()
+        # plt.hist(auc_r_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of AUC on each dimension of training data, lr')
+        # plt.xlabel('AUC (total number: ' + str(len(auc_r_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_AUC_r.jpg')
+        # plt.close()
+        # plt.hist(auc_g_all, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of AUC on each dimension of generated data, lr')
+        # plt.xlabel('AUC (total number: ' + str(len(auc_g_all)) + ' )')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
+        # plt.close()
+        # # scatter plot begins
+        # plt.scatter(precision_r_all, precision_g_all)
+        # plt.title('Dimension-wise prediction, precision')
         # plt.xlabel('Real data')
         # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction.jpg')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-precision.jpg')
         # plt.close()
-        # plt.scatter(rv_pro, gv_pro)
-        # plt.title('Dimension-wise probability, lr')
+        # plt.scatter(recall_r_all, recall_g_all)
+        # plt.title('Dimension-wise prediction, recall')
         # plt.xlabel('Real data')
         # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-probability.jpg')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-recall.jpg')
         # plt.close()
-        precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all = dwp(x_train, x_gene, self.validX, self.db)
-        bins = 100
-        plt.hist(precision_r_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of precision on each dimension of training data, lr')
-        plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_precision_r.jpg')
-        plt.close()
-        plt.hist(precision_g_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of precision on each dimension of generated data, lr')
-        plt.xlabel('Precision (total number: ' + str(len(precision_g_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_precision_g.jpg')
-        plt.close()
-        plt.hist(recall_r_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of recall on each dimension of training data, lr')
-        plt.xlabel('Recall (total number: ' + str(len(recall_r_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_recall_r.jpg')
-        plt.close()
-        plt.hist(recall_g_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of recall on each dimension of generated data, lr')
-        plt.xlabel('Recall (total number: ' + str(len(recall_g_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_recall_g.jpg')
-        plt.close()
-        plt.hist(acc_r_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of accuracy on each dimension of training data, lr')
-        plt.xlabel('Accuracy (total number: ' + str(len(acc_r_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_acc_r.jpg')
-        plt.close()
-        plt.hist(acc_g_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of accuracy on each dimension of generated data, lr')
-        plt.xlabel('Accuracy (total number: ' + str(len(acc_g_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_acc_g.jpg')
-        plt.close()
-        plt.hist(f1score_r_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of f1score on each dimension of training data, lr')
-        plt.xlabel('f1score (total number: ' + str(len(f1score_r_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_f1score_r.jpg')
-        plt.close()
-        plt.hist(f1score_g_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of f1score on each dimension of generated data, lr')
-        plt.xlabel('f1score (total number: ' + str(len(f1score_g_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_f1score_g.jpg')
-        plt.close()
-        plt.hist(auc_r_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of AUC on each dimension of training data, lr')
-        plt.xlabel('AUC (total number: ' + str(len(auc_r_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_AUC_r.jpg')
-        plt.close()
-        plt.hist(auc_g_all, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of AUC on each dimension of generated data, lr')
-        plt.xlabel('AUC (total number: ' + str(len(auc_g_all)) + ' )')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
-        plt.close()
-        # scatter plot begins
-        plt.scatter(precision_r_all, precision_g_all)
-        plt.title('Dimension-wise prediction, precision')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-precision.jpg')
-        plt.close()
-        plt.scatter(recall_r_all, recall_g_all)
-        plt.title('Dimension-wise prediction, recall')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-recall.jpg')
-        plt.close()
-        plt.scatter(acc_r_all, acc_g_all)
-        plt.title('Dimension-wise prediction, accuracy')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-accuracy.jpg')
-        plt.close()
-        plt.scatter(f1score_r_all, f1score_g_all)
-        plt.title('Dimension-wise prediction, f1score')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-f1score.jpg')
-        plt.close()
-        plt.scatter(auc_r_all, auc_g_all)
-        plt.title('Dimension-wise prediction, AUC')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-AUC.jpg')
-        plt.close()
+        # plt.scatter(acc_r_all, acc_g_all)
+        # plt.title('Dimension-wise prediction, accuracy')
+        # plt.xlabel('Real data')
+        # plt.ylabel('Generated data')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-accuracy.jpg')
+        # plt.close()
+        # plt.scatter(f1score_r_all, f1score_g_all)
+        # plt.title('Dimension-wise prediction, f1score')
+        # plt.xlabel('Real data')
+        # plt.ylabel('Generated data')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-f1score.jpg')
+        # plt.close()
+        # plt.scatter(auc_r_all, auc_g_all)
+        # plt.title('Dimension-wise prediction, AUC')
+        # plt.xlabel('Real data')
+        # plt.ylabel('Generated data')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-AUC.jpg')
+        # plt.close()
 
 def statistics(r, g, te, db, col):
     '''Column specific statistics (precision, recall(Sensitivity), f1-score, AUC)'''
@@ -560,56 +560,57 @@ def statistics(r, g, te, db, col):
 
 def dwp(r, g, te, db, C=1.0):
     '''Dimension-wise prediction & dimension-wise probability, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
-    # rv_pre = []
-    # gv_pre = []
-    # rv_pro = []
-    # gv_pro = []
-    precision_r_all = []
-    precision_g_all = []
-    recall_r_all = []
-    recall_g_all = []
-    acc_r_all = []
-    acc_g_all = []
-    f1score_r_all = []
-    f1score_g_all = []
-    auc_r_all = []
-    auc_g_all = []
+    rv_pre = []
+    gv_pre = []
+    rv_pro = []
+    gv_pro = []
+    # precision_r_all = []
+    # precision_g_all = []
+    # recall_r_all = []
+    # recall_g_all = []
+    # acc_r_all = []
+    # acc_g_all = []
+    # f1score_r_all = []
+    # f1score_g_all = []
+    # auc_r_all = []
+    # auc_g_all = []
     for i in range(len(r[0])):
         print i
-        # f_r, t_r = split(r, i) # separate feature and target
-        # f_g, t_g = split(g, i)
-        # f_te, t_te = split(te, i) # these 6 are all numpy array
-        # t_g[t_g < db ] = 0  # hard decision boundary
-        # t_g[t_g >= db ] = 1
-        # if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
-        #     print "skip this coordinate"
-        #     continue
-        # model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
-        # model_r.fit(f_r, t_r)
-        # label_r = model_r.predict(f_te)
-        # model_g = linear_model.LogisticRegression(C=C)
-        # model_g.fit(f_g, t_g)
-        # label_g = model_r.predict(f_te)
-        # rv_pre.append(f1_score(t_te, label_r)) # F1 score
-        # gv_pre.append(f1_score(t_te, label_g))
-        # rv_pro.append(float(np.count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
-        # gv_pro.append(float(np.count_nonzero(t_g))/len(t_g))
-        precision_r, precision_g, recall_r, recall_g, acc_r, acc_g, f1score_r, f1score_g, auc_r, auc_g = statistics(r, g, te, db, i)
-        if precision_r == []:
+        f_r, t_r = split(r, i) # separate feature and target
+        f_g, t_g = split(g, i)
+        f_te, t_te = split(te, i) # these 6 are all numpy array
+        t_g[t_g < db ] = 0  # hard decision boundary
+        t_g[t_g >= db ] = 1
+        if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
             print "skip this coordinate"
             continue
-        precision_r_all.append(precision_r)
-        precision_g_all.append(precision_g)
-        recall_r_all.append(recall_r)
-        recall_g_all.append(recall_g)
-        acc_r_all.append(acc_r)
-        acc_g_all.append(acc_g)
-        f1score_r_all.append(f1score_r)
-        f1score_g_all.append(f1score_g)
-        auc_r_all.append(auc_r)
-        auc_g_all.append(auc_g)
+        model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+        model_r.fit(f_r, t_r)
+        label_r = model_r.predict(f_te)
+        model_g = linear_model.LogisticRegression(C=C)
+        model_g.fit(f_g, t_g)
+        label_g = model_r.predict(f_te)
+        rv_pre.append(accuracy_score(t_te, label_r)) # accuracy_score
+        gv_pre.append(accuracy_score(t_te, label_g))
+        rv_pro.append(float(np.count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
+        gv_pro.append(float(np.count_nonzero(t_g))/len(t_g))
+        # precision_r, precision_g, recall_r, recall_g, acc_r, acc_g, f1score_r, f1score_g, auc_r, auc_g = statistics(r, g, te, db, i)
+        # if precision_r == []:
+        #     print "skip this coordinate"
+        #     continue
+        # precision_r_all.append(precision_r)
+        # precision_g_all.append(precision_g)
+        # recall_r_all.append(recall_r)
+        # recall_g_all.append(recall_g)
+        # acc_r_all.append(acc_r)
+        # acc_g_all.append(acc_g)
+        # f1score_r_all.append(f1score_r)
+        # f1score_g_all.append(f1score_g)
+        # auc_r_all.append(auc_r)
+        # auc_g_all.append(auc_g)
 
-    return precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all
+    return rv_pre, gv_pre, rv_pro, gv_pro
+    # return precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all
 
 def split(matrix, col):
     '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
@@ -631,8 +632,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=100, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=1000, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=2, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=2, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
