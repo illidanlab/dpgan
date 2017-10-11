@@ -282,17 +282,17 @@ class Medgan(object):
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
 
         optimize_ae = tf.train.AdamOptimizer().minimize(loss_ae + sum(all_regs), var_list=ae_vars)
-        optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)  # DP case
-        grads_and_vars = optimize_d.compute_gradients(loss_d + sum(all_regs), var_list=d_vars)
-        dp_grads_and_vars = []  # noisy version
-        for gv in grads_and_vars:  # for each pair
-            g = gv[0]  # get the gradient
-            #print g # shape of all vars
-            if g is not None:  # skip None case
-                g = self.dpnoise(g, batchSize)
-            dp_grads_and_vars.append((g, gv[1]))
-        optimize_d_new = optimize_d.apply_gradients(dp_grads_and_vars)
-        # optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_d + sum(all_regs), var_list=d_vars)
+        # optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)  # DP case
+        # grads_and_vars = optimize_d.compute_gradients(loss_d + sum(all_regs), var_list=d_vars)
+        # dp_grads_and_vars = []  # noisy version
+        # for gv in grads_and_vars:  # for each pair
+        #     g = gv[0]  # get the gradient
+        #     #print g # shape of all vars
+        #     if g is not None:  # skip None case
+        #         g = self.dpnoise(g, batchSize)
+        #     dp_grads_and_vars.append((g, gv[1]))
+        # optimize_d_new = optimize_d.apply_gradients(dp_grads_and_vars)
+        optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_d + sum(all_regs), var_list=d_vars)
         optimize_g = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_g + sum(all_regs), var_list=g_vars+decodeVariables.values())
         d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in d_vars]
 
@@ -336,8 +336,8 @@ class Medgan(object):
                         batchIdx = np.random.choice(idx, size=batchSize, replace=False)
                         batchX = self.trainX[batchIdx]
                         randomX = np.random.normal(size=(batchSize, self.randomDim))
-                        # _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # non-DP case
-                        _, discLoss = sess.run([optimize_d_new, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # DP case
+                        _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # non-DP case
+                        # _, discLoss = sess.run([optimize_d_new, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # DP case
                         sess.run(d_clip)
                         d_loss_vec.append(discLoss)
                         self.wdis_store.append(-1*discLoss)
@@ -391,7 +391,7 @@ class Medgan(object):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
         sigma = 6000.0  # assign it manually
-        cg = 0.01
+        cg = 0.0
         rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
@@ -632,8 +632,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=2, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=2, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=100, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=1000, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
