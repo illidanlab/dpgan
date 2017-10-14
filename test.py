@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib import gridspec
 import matplotlib.mlab as mlab
+from pylab import *
 import cPickle as pickle
-from numpy import concatenate, where, unique, ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
+from numpy import load, sqrt, log10, pi, concatenate, where, unique, ceil, dot, reshape, random, float64, exp, newaxis, float, asarray, delete, linspace, clip, load, arange, linalg, argmin, array, random, zeros, fill_diagonal, average, amax, amin, sort, sum
 import os, os.path
-import random
 from PIL import Image
 from random import shuffle
 import sys, time, argparse
@@ -16,7 +16,7 @@ from tensorflow.contrib.layers import batch_norm
 import matplotlib.gridspec as gridspec
 import sys, time, argparse
 import tensorflow as tf
-from utilize import data_readf, c2b, c2bcolwise, splitbycol, gene_check, statistics
+from utilize import data_readf, c2b, c2bcolwise, splitbycol, gene_check, statistics, dwp, load_MIMICIII, fig_add_noise
 import csv
 from heapq import nsmallest
 from sklearn import linear_model
@@ -32,15 +32,75 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_sc
 # import pandas as pd
 
 
-c1 = array([[1,20],[1,3],[1,50]])
-c2 = array([[1,17],[1,2],[1,50]])
+# # change font and size in figure
+# axis_font = {'size': '30', 'weight': 'bold'}
+# ax = gca()
+# fontsize = 16
+# for tick in ax.xaxis.get_major_ticks():
+#     tick.label1.set_fontsize(fontsize)
+#     tick.label1.set_fontweight('bold')
+# for tick in ax.yaxis.get_major_ticks():
+#     tick.label1.set_fontsize(fontsize)
+#     tick.label1.set_fontweight('bold')
+#
+# with open('/home/decs/2017-DPGAN/result/07302017dp15/lossfile/wdis.pckl', 'rb') as fp:
+#     data = pickle.load(fp)
+# t = arange(len(data))
+# plt.plot(t, data, 'b--')
+# plt.xlabel('Generator iterations (*10^{2})', fontsize=18)
+# plt.ylim(-0.5, 3.5)
+# plt.ylabel('Wasserstein distance', fontsize=18)
+# plt.savefig('/home/decs/2017-DPGAN/result/07302017dp15/lossfile/wdisdp15.jpg')
+#
+#
+#
+# # change font and size in figure
+# axis_font = {'size': '30', 'weight': 'bold'}
+# ax = gca()
+# fontsize = 16
+# for tick in ax.xaxis.get_major_ticks():
+#     tick.label1.set_fontsize(fontsize)
+#     tick.label1.set_fontweight('bold')
+# for tick in ax.yaxis.get_major_ticks():
+#     tick.label1.set_fontsize(fontsize)
+#     tick.label1.set_fontweight('bold')
+#
+# with open('/home/decs/2017-DPGAN/result/10102017/4/genefinalfig/rv_pro.pickle', 'rb') as fp:
+#     rv_pro = pickle.load(fp)
+# with open('/home/decs/2017-DPGAN/result/10102017/4/genefinalfig/gv_pro.pickle', 'rb') as fp:
+#     gv_pro = pickle.load(fp)
+# plt.scatter(rv_pro, gv_pro)
+# plt.title('Dimension-wise probability, lr', fontsize=18)
+# plt.xlabel('Real data', fontsize=18)
+# plt.ylabel('Generated data', fontsize=18)
+# plt.savefig('/home/decs/2017-DPGAN/result/10102017/4/genefinalfig/EHRstd60.jpg')
+# plt.close()
 
-print sum(c1 == c2)
-print float(sum(c1 == c2))/(c1.shape[0]*c1.shape[1])
 
+# Rareness of diseases in MIMIC-III
+axis_font = {'size': '30', 'weight': 'bold'}
+ax = gca()
+fontsize = 16
+for tick in ax.xaxis.get_major_ticks():
+    tick.label1.set_fontsize(fontsize)
+    tick.label1.set_fontweight('bold')
+for tick in ax.yaxis.get_major_ticks():
+    tick.label1.set_fontsize(fontsize)
+    tick.label1.set_fontweight('bold')
 
-
-
+dataPath = '/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/PATIENTS.csv.matrix'
+data = load(dataPath)
+data = clip(data, 0, 1)
+# bar graph
+performance = data.sum(axis=0)/len(data)
+y_pos = arange(len(performance))
+plt.bar(y_pos, performance, align='center')
+plt.xlim(0,1200)
+plt.xlabel('ICD-9 codes', fontsize=18)
+plt.ylabel('Rareness', fontsize=18)
+plt.title('Occur of diseases in MIMIC-III', fontsize=18)
+plt.savefig('./result/genefinalfig/Rareness.jpg')
+plt.close()
 
 
 '''
@@ -49,6 +109,10 @@ print "we are here"
 print "something change"
 print "Test begin"
 print "Test end"
+
+# compute \epsilon given std and c_{g}
+print (2.0*(64.0/60000.0))*sqrt(25.0)/(5.0/13449.216) # MNIST, correcct
+print (2.0*(1000.0/46520.0))*sqrt(10.0)/(18.0/61414.1) # EHR, correct
 
 print bx.shape
 matrix1 = tf.constant([[3., 3.]])
@@ -95,9 +159,6 @@ r = array([[1,0,0,1], [0,1,0,1], [1,1,0,0], [1,1,0,1]])
 g = array([[1,3,2,4], [2,3,5,8], [3,3,5,2], [2,5,2,5]])
 te = array([[1,3,12,6], [2,3,4,7], [3,3,6,8], [2,5,9,0]])
 a = array([3, 8, 9, 2, 12, 7])
-rv = array([0, 0, 1, 0, 1, 1, 1, 1, 0])
-gv = array([0, 1, 1, 0, 1, 0, 1, 1, 1])
-b = array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 MIMIC_data = array([[2,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11], [0,1,1,0], [0,1,0,0], [0,1,1,0], [3,0,0,5], [1,0,1,5], [1,0,0,3]])
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
@@ -106,14 +167,18 @@ a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])
 a = array([1, 2, 3, 4, 5, 6])
 b = array([14, 11, 4, 12, 22, 5])
+rv = array([0, 0, 1, 0, 1, 1, 1, 1, 0])
+gv = array([0, 1, 1, 0, 1, 0, 1, 1, 1])
+b = array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+{test dwp
+r = array([[1,1,0,1,0], [1,1,1,1,1], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
+g = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
+te = array([[1,1,0,1,0], [1,0,1,0,0], [0,1,1,0,1], [0,1,1,0,0], [0,0,1,0,0]])
 train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
-generated = array([[10.0,3.1,4.3,3.3,6.3], [10.3,13.3,15.3,16.3,15.3], [19.3,12.3,14.2,11.3,12.3], [10.3,20.3,15.3,21.3,23.3], [24.3,25.3,30.3,31.3,40.3]])
-train = array([[1,0,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,1,0,0], [0,0,0,1,0]])
-generated = array([[5,7,7,9,0], [6,5,2,3,4], [1,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]])
-real = array([[1,1,0,1,0], [1,1,1,1,1], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
 generated = array([[1,0,0,1,0], [0,0,1,0,0], [1,1,1,1,1], [0,0,1,1,0], [0,0,0,1,0]])
-real = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
-test = = array([[1,1,0,1,0], [1,0,1,0,0], [0,1,1,0,1], [0,1,1,0,0], [0,0,1,0,0]])
+}
+generated = array([[10.0,3.1,4.3,3.3,6.3], [10.3,13.3,15.3,16.3,15.3], [19.3,12.3,14.2,11.3,12.3], [10.3,20.3,15.3,21.3,23.3], [24.3,25.3,30.3,31.3,40.3]])
+generated = array([[5,7,7,9,0], [6,5,2,3,4], [1,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]])
 r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
 g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
 te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
@@ -128,12 +193,32 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
 
 data = average(concatenate((array([data15]), array([data20])), axis=0), axis=0) # stack 2 arrays (each is 1 by 2) and average and get 1 array
 
+def test():
+    a=0
+    b=1
+    c=2
+    return a ,b, c
+
 for i in range(len(x_gene_dec)): # round the value (continuous to binary), >= 0.5: 1, <0.5: 0
     for j in range(len(x_gene_dec[0])):
         if x_gene_dec[i][j] >= 0.5:
             x_gene_dec[i][j] = 1
         else:
             x_gene_dec[i][j] = 0
+
+# Rareness of diseases in MIMIC-III
+dataPath = '/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/PATIENTS.csv.matrix'
+data = load(dataPath)
+data = clip(data, 0, 1)
+# bar graph
+performance = data.sum(axis=0)/len(data)
+y_pos = arange(len(performance))
+plt.bar(y_pos, performance, align='center')
+plt.xlabel('ICD-9 codes: 0001 to 1071')
+plt.ylabel('Rareness')
+plt.title('Occur of diseases in MIMIC-III')
+plt.savefig('./result/genefinalfig/Rareness.jpg')
+plt.close()
 
 # collect weights (only, no bias) in discriminator
 weights = [var for var in self.d_net.vars if "weights:0" in var.name]
@@ -260,6 +345,26 @@ plt.legend([name1p, name2p, name3p, name4p, name5p, name6p, name7p], ["non-DP", 
 plt.xlabel('Generator iterations (*10^{2})')
 plt.ylabel('Wasserstein Distance')
 plt.savefig('exp2.jpg')
+
+# change font and size in figure
+axis_font = {'size': '30', 'weight': 'bold'}
+ax = gca()
+fontsize = 16
+for tick in ax.xaxis.get_major_ticks():
+    tick.label1.set_fontsize(fontsize)
+    tick.label1.set_fontweight('bold')
+for tick in ax.yaxis.get_major_ticks():
+    tick.label1.set_fontsize(fontsize)
+    tick.label1.set_fontweight('bold')
+
+with open('/home/decs/2017-DPGAN/result/07302017dp15/lossfile/wdis.pckl', 'rb') as fp:
+    data = pickle.load(fp)
+t = arange(len(data))
+plt.plot(t, data, 'b--')
+plt.xlabel('Generator iterations (*10^{2})', fontsize=18)
+plt.ylim(-0.5, 3.5)
+plt.ylabel('Wasserstein distance', fontsize=18)
+plt.savefig('/home/decs/2017-DPGAN/result/07302017dp15/lossfile/wdisdp15.jpg')
 
 # collect files from subfolders, resize, move to another folder
 paths = "/home/decs/2017-DPGAN/code/wgan/face_test/LFW/lfw_aligned_cropped/" # 5749 folders, 13233 images

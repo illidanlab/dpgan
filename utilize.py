@@ -50,9 +50,9 @@ def c2b(train, generated, adj):
 def c2bcolwise(train, generated, adj):
     '''Set the number of 1 in each column in generated data the same as the same column in training data, the rest is set to 0.
     Network learn the joint distribution p(x1,...xd), then it should also learn the marginal distribution p(x1),...,p(xd), which
-    is approximately the frequent of 1 (and 0) in each feature (coordinate) x1...xd, hence it make sense to do in this way. But
+    is approximately the frequent of 1 (and 0) in each feature (coordinate) x1...xd, hence it make sense to do so. But
     by doing so we "force" the generated data have the same portion of 1 in each feature (coordinate) no matter how the network
-    is trained (even not trained), this doesn't matters since features (coordinates) are dependent, p(x1,...xd) != p(x1)*...*p(xd)
+    is trained (even not trained at all), this doesn't matters since features (coordinates) are dependent, p(x1,...xd) != p(x1)*...*p(xd)
     only setting the frequency of 1 in each feature (coordinate) is not enough, it also relies on the training of NN to learn the
     dependency among features (coordinates), i.e. conditional probability of x1...xd'''
     generated_new = [] # store new one
@@ -76,7 +76,7 @@ def c2bcolwise(train, generated, adj):
     generated_new = array(generated_new).T
     print 'Nonzero element in each feature (coordinate) in generated data: '
     print list(map(int, generated_new.sum(axis=0)))
-    print 'portion of element that is match between training data and generated data'
+    print 'Portion of element that is match between training data and generated data'
     print float(sum(train == generated_new))/(train.shape[0]*train.shape[1])
     return generated_new
 
@@ -147,21 +147,22 @@ def match(l1,l2):
     return count
 
 
-def dwp(r, g, te, C=1.0):
-    '''Dimension-wise prediction, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
-    rv = []
-    gv = []
+def dwp(r, g, te, db=0.5, C=1.0):
+    '''Dimension-wise prediction & dimension-wise probability, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
+    rv_pre = []
+    gv_pre = []
+    rv_pro = []
+    gv_pro = []
     for i in range(len(r[0])):
         print i
-
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
         f_te, t_te = split(te, i) # these 6 are all numpy array
-        t_g[t_g < 1] = 0 # transfer non 1 to 0 (c to b)
+        t_g[t_g < db ] = 0  # hard decision boundary
+        t_g[t_g >= db ] = 1
         if (unique(t_r).size == 1) or (unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
             print "skip this coordinate"
             continue
-
         model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
         model_r.fit(f_r, t_r)
         label_r = model_r.predict(f_te)
@@ -172,9 +173,8 @@ def dwp(r, g, te, C=1.0):
         # print mean(model_r.coef_), count_nonzero(model_r.coef_), mean(model_g.coef_), count_nonzero(model_g.coef_) # statistics of classifiers
         # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
         # gv.append(match(label_g, t_te)/(len(t_te)+10**(-10)))
-        rv.append(f1_score(t_te, label_r)) # F1 score
-        gv.append(f1_score(t_te, label_g))
-
+        rv_pre.append(f1_score(t_te, label_r)) # F1 score
+        gv_pre.append(f1_score(t_te, label_g))
         # reg = linear_model.LinearRegression() # least square error
         # reg.fit(f_r, t_r)
         # target_r = reg.predict(f_te)
@@ -183,8 +183,58 @@ def dwp(r, g, te, C=1.0):
         # target_g = reg.predict(f_te)
         # rv.append(square(linalg.norm(target_r-t_te)))
         # gv.append(square(linalg.norm(target_g-t_te)))
+        rv_pro.append(float(count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
+        gv_pro.append(float(count_nonzero(t_g))/len(t_g))
 
-    return rv, gv
+    return rv_pre, gv_pre, rv_pro, gv_pro
+
+
+# rv_pre, gv_pre, rv_pro, gv_pro = dwp(r, g, te)
+
+# # test dwp using MIMIC-III data
+# trainX, testX, _ = load_MIMICIII('binary', 0.25, 1071)  # load whole dataset and split into training and testing set
+# rv_pre, gv_pre, rv_pro, gv_pro = dwp(trainX, trainX, testX)
+# plt.scatter(rv_pre, gv_pre)
+# plt.title('Dimension-wise prediction, lr')
+# plt.xlabel('Real data')
+# plt.ylabel('Generated data')
+# plt.savefig('./dwp_pre.jpg')
+# plt.close()
+# plt.scatter(rv_pro, gv_pro)
+# plt.title('Dimension-wise probability, lr')
+# plt.xlabel('Real data')
+# plt.ylabel('Generated data')
+# plt.savefig('./dwp_pro.jpg')
+# plt.close()
+
+# # detect the special case of f1 score, all 1 (perfect classification) and all 0
+# for i in range(20):
+#     trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
+#     print trainX.shape, testX.shape
+#     rv, gv = dwp(trainX, trainX, testX)
+#     rg11 = 0 # both have F1 score equal to 1
+#     rg00 = 0 # both have F1 score equal to 0
+#     for i in range(len(rv)):
+#         if rv[i] == 1 and gv[i] == 1:
+#             rg11 = rg11 + 1
+#         elif rv[i] == 0 and gv[i] == 0:
+#             rg00 = rg00 + 1
+#         else:
+#             pass
+#     print "we need to print out something"
+#     print rg11 # 12
+#     print rg00 # 52
+
+# # cross validation on C
+# for j in range(10):
+#     C = 10 ** (-5) * 10 ** (j)
+#     for i in range(10):
+#         trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
+#         rv, gv = dwp(trainX, trainX, testX, C)
+#         print rv
+#         plt.close()
+#         plt.hist(rv, 10, facecolor='red', alpha=0.5)
+#         plt.savefig('./result/genefinalfig/'+str(j)+str(i)+'Histogram.jpg')
 
 
 def splitbycol(dataType, _VALIDATION_RATIO, col, MIMIC_data):
@@ -265,53 +315,6 @@ def statistics(r, g, te, col):
     auc_g = roc_auc_score(t_te, label_g)
 
     return precision_r, precision_g, recall_r, recall_g, acc_r, acc_g, f1score_r, f1score_g, auc_r, auc_g
-
-
-# r = array([[0.8,0.1,0.4,0.1], [0.2,0.3,0.5,0.6], [0.7,0.3,0.1,0.5], [0.9,0.5,0.6,0.11]])
-# g = array([[0.1,0.3,0.2,0.4], [0.12,0.3,0.51,0.8], [0.23,0.13,0.5,0.2], [0.22,0.5,0.12,0.5]])
-# te = array([[0.1,0.3,0.12,0.6], [0.2,0.3,0.4,0.7], [0.3,0.3,0.6,0.8], [0.2,0.5,0.9,0.03]])
-# rv, gv = dwp(r, g, te)
-# print rv, gv
-# plt.plot(rv, gv)
-# plt.savefig('./u.png')
-
-# # test dwp using MIMIC-III data
-# trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
-# rv, gv = dwp(trainX, trainX, testX)
-# plt.scatter(rv, gv)
-# plt.title('Scatter plot of dimension-wise MSE')
-# plt.xlabel('Real')
-# plt.ylabel('Generated')
-# plt.savefig('./result/genefinalfig/dwp.jpg')
-
-# # detect the special case of f1 score, all 1 (perfect classification) and all 0
-# for i in range(20):
-#     trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
-#     print trainX.shape, testX.shape
-#     rv, gv = dwp(trainX, trainX, testX)
-#     rg11 = 0 # both have F1 score equal to 1
-#     rg00 = 0 # both have F1 score equal to 0
-#     for i in range(len(rv)):
-#         if rv[i] == 1 and gv[i] == 1:
-#             rg11 = rg11 + 1
-#         elif rv[i] == 0 and gv[i] == 0:
-#             rg00 = rg00 + 1
-#         else:
-#             pass
-#     print "we need to print out something"
-#     print rg11 # 12
-#     print rg00 # 52
-
-# # cross validation on C
-# for j in range(10):
-#     C = 10 ** (-5) * 10 ** (j)
-#     for i in range(10):
-#         trainX, testX, _ = load_MIMICIII(dataType, _VALIDATION_RATIO, top)  # load whole dataset and split into training and testing set
-#         rv, gv = dwp(trainX, trainX, testX, C)
-#         print rv
-#         plt.close()
-#         plt.hist(rv, 10, facecolor='red', alpha=0.5)
-#         plt.savefig('./result/genefinalfig/'+str(j)+str(i)+'Histogram.jpg')
 
 
 # # test statistics using splitbycol
@@ -412,6 +415,13 @@ def statistics(r, g, te, col):
 # plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
 # plt.close()
 
+def fig_add_noise(List):
+    '''adding noise to results to make them distinguishable on figure'''
+    print len(List)
+    print 0.0001*random.randn(len(List))
+    List_new = List + 0.0001*random.randn(len(List))
+    return List_new
+
 # def scale_transform(self, image):
 #     '''this function transform the scale of generated image (0, largest pixel value) to (0,255) linearly'''
 #     im = array(image)
@@ -424,6 +434,7 @@ def statistics(r, g, te, col):
 # def im_avg(im):
 #     '''compress image from rbg to grayscale, input should be numpy array'''
 #     return average(im, axis=2).reshape(64,64,1)
+
 
 # def loaddata_face(path):
 #     # for file in os.listdir(path):
