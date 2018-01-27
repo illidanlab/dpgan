@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 import cPickle as pickle
 from numpy import linalg, argmin, array, arange
 import matplotlib.gridspec as gridspec
-from utilize import normlization, loaddata
+from utilize import normlization, loaddata, Rsample
 import logging # these 2 lines ar used in GPU3
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 
@@ -82,7 +82,7 @@ class WassersteinGAN(object):
 
             for _ in range(0, d_iters): # train discriminator
                 # data_td, label_td = self.x_sampler(batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
-                data_td, label_td =
+                data_td, label_td = Rsample(self.data_td, self.label_td, batch_size)
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
                 # self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case

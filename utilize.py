@@ -463,9 +463,12 @@ def fig_add_noise(List):
 # batch_size = 2
 # res = loaddata_face_batch(im, batch_size)
 
+def Rsample(data, label, bs):
+
+
+
 # load data and labels into matrix of specific digit
-def loaddata(digits, dataset='training',
-             path='.'):  # digits should among 0-9, dataset should be 'training' or 'testing', path is where you store your dataset file
+def loaddata(digits, dataset='training', path='.'):  # digits should among 0-9, dataset should be 'training' or 'testing', path is where you store your dataset file
 
     # get the path of dataset
     if dataset is 'training':
