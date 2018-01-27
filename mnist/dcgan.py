@@ -22,20 +22,20 @@ class Discriminator(object):
                 x, 64, [4, 4], [2, 2],
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 activation_fn=tf.identity
-            ) # output shape: [bs, 14, 14, 64], the padding in this layer is P = 1
+            ) # output shape: [bs, 14, 14, 64], the padding in this layer is P = 1, 4*4*14*14*64 = 200704
             conv1 = leaky_relu(conv1)
             conv2 = tc.layers.convolution2d(
                 conv1, 128, [4, 4], [2, 2],
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 activation_fn=tf.identity
-            ) # output shape: [bs, 7, 7, 128], the padding in this layer is P = 0
+            ) # output shape: [bs, 7, 7, 128], the padding in this layer is P = 0, 4*4*7*7*128 = 100352
             conv2 = leaky_relu(conv2)
             conv2 = tcl.flatten(conv2)
             fc1 = tc.layers.fully_connected(
                 conv2, 1024,
                 weights_initializer=tf.random_normal_initializer(stddev=0.02),
                 activation_fn=tf.identity
-            ) # network shape: [7*7*128=6272, 1024]
+            ) # network shape: [7*7*128=6272, 1024], 6272*1024 = 6422528
             fc1 = leaky_relu(fc1)
             fc2 = tc.layers.fully_connected(fc1, 1, activation_fn=tf.identity)
             return fc2

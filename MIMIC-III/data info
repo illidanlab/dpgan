@@ -1,0 +1,3 @@
+icd9_groups.pkl: type: list, len: 942, type of each: unicode
+feature_dictionary.pkl: type: dict, len: 942, MIMIC_ICD9['619']: 508
+patient_vectors.pkl: type: dict, len: 46520, len of each: 942, type of each: list

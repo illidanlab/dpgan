@@ -17,7 +17,7 @@ from visualize import *
 
 
 class WassersteinGAN(object):
-    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, batch_size=64): # changed
+    def __init__(self, g_net, d_net, x_sampler, z_sampler, data, model, sigma, number, batch_size=64): # changed
         self.model = model
         self.data = data
         self.g_net = g_net
@@ -26,9 +26,12 @@ class WassersteinGAN(object):
         self.z_sampler = z_sampler
         self.x_dim = self.d_net.x_dim
         self.z_dim = self.g_net.z_dim
+        self.sigma = sigma
+        self.number = number
         self.x = tf.placeholder(tf.float32, [None, self.x_dim], name='x') # [None, 784]
         self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
         self.x_ = self.g_net(self.z)
+        self.data_td, self.label_td = loaddata(self.number, 'training', r'./mnist/MNIST')  # data_td: data for training discriminator, data_td.shape: (64, 784)
 
         self.d = self.d_net(self.x, reuse=False)
         self.d_ = self.d_net(self.x_)
@@ -59,7 +62,7 @@ class WassersteinGAN(object):
             self.g_rmsprop = tf.train.RMSPropOptimizer(learning_rate=5e-5) \
                 .minimize(-1*self.g_loss_reg, var_list=self.g_net.vars)
 
-        self.d_clip = [v.assign(tf.clip_by_value(v, -0.02, 0.02)) for v in self.d_net.vars]
+        self.d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in self.d_net.vars]
         self.d_net_var_grad = [i for i in tf.gradients(self.d_loss_reg, self.d_net.vars) if i is not None] # explore the effect of noise on norm of D net variables's gradient vector, also remove None type
         self.norm_d_net_var_grad = []
         gpu_options = tf.GPUOptions(allow_growth=True)
@@ -68,7 +71,7 @@ class WassersteinGAN(object):
         self.d_loss_store = [] # store loss of discriminator
         self.wdis_store = []  # store Wasserstein distance, new added
 
-    def train(self, batch_size=64, num_batches=500000): # batch_size*ite should be euough to use whole dataset for
+    def train(self, batch_size=64, num_batches=200000): # batch_size*ite should be euough to use whole dataset for
         plt.ion()
         self.sess.run(tf.initialize_all_variables())
         start_time = time.time()
@@ -78,7 +81,8 @@ class WassersteinGAN(object):
                  d_iters = 100
 
             for _ in range(0, d_iters): # train discriminator
-                data_td, label_td = self.x_sampler(batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
+                # data_td, label_td = self.x_sampler(batch_size) # data_td: data for training discriminator, data_td.shape: (64, 784)
+                data_td, label_td =
                 bz = self.z_sampler(batch_size, self.z_dim)
                 self.sess.run(self.d_rmsprop_new, feed_dict={self.x: data_td, self.z: bz}) # DP case
                 # self.sess.run(self.d_rmsprop, feed_dict={self.x: data_td, self.z: bz}) # non-DP case
@@ -88,8 +92,9 @@ class WassersteinGAN(object):
             self.sess.run(self.g_rmsprop, feed_dict={self.z: bz, self.x: data_td})
 
             if t % 100 == 0: # evaluate loss and norm of gradient vector
-                bx,l = self.x_sampler(batch_size) # the reason we generate another batch of sample is that we want to see if the distance of 2 distributions are indeed pulled closer
-                bz = self.z_sampler(batch_size, self.z_dim)
+                # bx,l = self.x_sampler(batch_size) # the reason we generate another batch of sample is that we want to see if the distance of 2 distributions are indeed pulled closer
+
+                # bz = self.z_sampler(batch_size, self.z_dim)
 
                 rd_loss = self.sess.run(
                     self.d_loss, feed_dict={self.x: bx, self.z: bz}
@@ -184,9 +189,7 @@ class WassersteinGAN(object):
     def dpnoise(self, tensor, batch_size):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
-        sigma = 0.00012  # assign it manually
-        cg = 100000.0
-        rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
+        rt = tf.random_normal(s, mean=0.0, stddev= self.sigma)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batch_size), rt))
         return t
 
@@ -252,6 +255,11 @@ if __name__ == '__main__':
     zs = data.NoiseSampler()
     d_net = model.Discriminator() # mnist/mlp.py, d_net is a instance of class Discriminator
     g_net = model.Generator()
-    wgan = WassersteinGAN(g_net, d_net, xs, zs, args.data, args.model)
-    wgan.train()
-    wgan.loss_store() # new added
+    digit = [] # all MNIST digit
+    for i in range(10):
+        digit.append(str(i))
+    number = digit[0]
+    for sigma in [0.0, 5.0, 10.0 ,15.0]:
+        wgan = WassersteinGAN(g_net, d_net, xs, zs, args.data, args.model, sigma, number)
+        wgan.train()
+        wgan.loss_store() # new added

@@ -15,7 +15,7 @@ from sklearn import linear_model
 _VALIDATION_RATIO = 0.1
 
 
-class Medgan(object):
+class Medwgan(object):
     def __init__(self,
                  dataType='binary',
                  inputDim=1071,
@@ -662,7 +662,7 @@ if __name__ == '__main__':
     # data = np.load(args.data_file)
     inputDim = 1071
 
-    mg = Medgan(dataType=args.data_type,
+    mg = Medwgan(dataType=args.data_type,
                 inputDim=inputDim,
                 embeddingDim=args.embed_size,
                 randomDim=args.noise_size,
