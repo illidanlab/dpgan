@@ -16,7 +16,7 @@ from tensorflow.contrib.layers import batch_norm
 import matplotlib.gridspec as gridspec
 import sys, time, argparse
 import tensorflow as tf
-from utilize import data_readf, c2b, c2bcolwise, splitbycol, gene_check, statistics, dwp, load_MIMICIII, fig_add_noise
+from utilize import data_readf, c2b, c2bcolwise, splitbycol, gene_check, statistics, dwp, load_MIMICIII, fig_add_noise, Rsample
 import csv
 from heapq import nsmallest
 from sklearn import linear_model
@@ -77,30 +77,30 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_sc
 # plt.close()
 
 
-# Rareness of diseases in MIMIC-III
-axis_font = {'size': '30', 'weight': 'bold'}
-ax = gca()
-fontsize = 16
-for tick in ax.xaxis.get_major_ticks():
-    tick.label1.set_fontsize(fontsize)
-    tick.label1.set_fontweight('bold')
-for tick in ax.yaxis.get_major_ticks():
-    tick.label1.set_fontsize(fontsize)
-    tick.label1.set_fontweight('bold')
-
-dataPath = '/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/PATIENTS.csv.matrix'
-data = load(dataPath)
-data = clip(data, 0, 1)
-# bar graph
-performance = data.sum(axis=0)/len(data)
-y_pos = arange(len(performance))
-plt.bar(y_pos, performance, align='center')
-plt.xlim(0,1200)
-plt.xlabel('ICD-9 codes', fontsize=18)
-plt.ylabel('Rareness', fontsize=18)
-plt.title('Occur of diseases in MIMIC-III', fontsize=18)
-plt.savefig('./result/genefinalfig/Rareness.jpg')
-plt.close()
+# # Rareness of diseases in MIMIC-III
+# axis_font = {'size': '30', 'weight': 'bold'}
+# ax = gca()
+# fontsize = 16
+# for tick in ax.xaxis.get_major_ticks():
+#     tick.label1.set_fontsize(fontsize)
+#     tick.label1.set_fontweight('bold')
+# for tick in ax.yaxis.get_major_ticks():
+#     tick.label1.set_fontsize(fontsize)
+#     tick.label1.set_fontweight('bold')
+#
+# dataPath = '/home/xieliyan/Dropbox/GPU/Data/MIMIC-III/PATIENTS.csv.matrix'
+# data = load(dataPath)
+# data = clip(data, 0, 1)
+# # bar graph
+# performance = data.sum(axis=0)/len(data)
+# y_pos = arange(len(performance))
+# plt.bar(y_pos, performance, align='center')
+# plt.xlim(0,1200)
+# plt.xlabel('ICD-9 codes', fontsize=18)
+# plt.ylabel('Rareness', fontsize=18)
+# plt.title('Occur of diseases in MIMIC-III', fontsize=18)
+# plt.savefig('./result/genefinalfig/Rareness.jpg')
+# plt.close()
 
 
 '''
@@ -162,6 +162,7 @@ a = array([3, 8, 9, 2, 12, 7])
 MIMIC_data = array([[2,2,0,1], [0,3,1,0], [3,0,1,5], [2,0,0,11], [0,1,1,0], [0,1,0,0], [0,1,1,0], [3,0,0,5], [1,0,1,5], [1,0,0,3]])
 b = [4, 7, 9, 2, 12, 7]
 a = array([3, 8, 19, 2, 12, 7])
+b = array([4, 7, 9, 2, 12])
 b = array([4, 7, 9, 2, 12, 7])
 a = array([-3, -8, 19, 2, -12, 7])
 a = array([-1, -1, 1, 1, -1, 1])

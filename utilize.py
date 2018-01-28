@@ -9,7 +9,7 @@ matplotlib.use('agg')
 import os, struct
 from pylab import *
 from array import array as pyarray
-from numpy import *
+from numpy import zeros, random
 from PIL import Image
 from sklearn.preprocessing import binarize
 from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, roc_auc_score
@@ -464,11 +464,22 @@ def fig_add_noise(List):
 # res = loaddata_face_batch(im, batch_size)
 
 def Rsample(data, label, bs):
+    a = random.choice(len(label), bs, replace=False)
+    return data[a], label[a]
+
+def MNIST_c(path, digits):
+    '''classification task to test the quality of generated data of MNIST.'''
+    files = os.listdir(path)
+
+    with open(path + files[0], 'rb') as f:
+        mnist_data = pickle.load(f)
+
+
 
 
 
 # load data and labels into matrix of specific digit
-def loaddata(digits, dataset='training', path='.'):  # digits should among 0-9, dataset should be 'training' or 'testing', path is where you store your dataset file
+def loaddata(digits, dataset, path):  # digits should among 0-9, dataset should be 'training' or 'testing', path is where you store your dataset file
 
     # get the path of dataset
     if dataset is 'training':
@@ -480,8 +491,7 @@ def loaddata(digits, dataset='training', path='.'):  # digits should among 0-9, 
 
     # if this is a label file
     flbl = open(fname_lbl, 'rb')
-    magic_nr, size = struct.unpack('>II', flbl.read(
-        8))  # read the header information in the label file, '>II' means using big-endian, read 8 characters.
+    magic_nr, size = struct.unpack('>II', flbl.read(8))  # read the header information in the label file, '>II' means using big-endian, read 8 characters.
     lbl = pyarray("b", flbl.read())  # 'b' for signed char
     flbl.close()
 
@@ -496,12 +506,12 @@ def loaddata(digits, dataset='training', path='.'):  # digits should among 0-9, 
     N = len(ind)  # number of labels
 
     # store and return the result
-    images = zeros((N, rows * cols), dtype=uint8)
-    labels = zeros((N, 1), dtype=int8)
+    images = zeros((N, rows * cols), dtype='uint8')
+    labels = zeros((N, 1), dtype='uint8')
     for i in range(len(ind)):
         images[i] = array(img[ind[i] * rows * cols: (ind[i] + 1) * rows * cols])  # every row is an image. every row: array([784 data, , , ,...])
         labels[i] = lbl[ind[i]]
-    labels = [v[0] for v in labels] # array to int
+    labels = array([v[0] for v in labels]) # array to int
 
     return images, labels
 
