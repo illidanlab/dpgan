@@ -172,6 +172,7 @@ rv = array([0, 0, 1, 0, 1, 1, 1, 1, 0])
 gv = array([0, 1, 1, 0, 1, 0, 1, 1, 1])
 b = array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 {test dwp
+data_train_s = array([[1,1,0], [1,1,1], [0,1,0], [0,0,1], [0,0,0]])
 r = array([[1,1,0,1,0], [1,1,1,1,1], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
 g = array([[1,1,0,1,0], [1,1,1,0,0], [0,1,0,0,1], [0,0,1,0,0], [0,0,0,0,0]])
 te = array([[1,1,0,1,0], [1,0,1,0,0], [0,1,1,0,1], [0,1,1,0,0], [0,0,1,0,0]])
@@ -191,6 +192,39 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
               [0.6341, 0.1403, 0.9759, 0.4064],
               [0.5918, 0.6948, 0.904, 0.3721],
               [0.0921, 0.2481, 0.1188, 0.1366]])
+
+# test code of MNIST_c
+file_path = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/datafile/"
+data_path = ""
+path_output = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/"
+digit_pair = '01'
+number_train = 2
+number_test = 2
+iter = 1
+C = 1.0
+MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_test, iter, C)
+
+path_output = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/"
+start = 0
+for sigma in range(4):
+	for digit in range(2):
+		print 'x_gene_' + str(digit) + '_sigma' + str(sigma)
+		start = start+10
+		x_gene = []
+		label = []
+		for i in range(5):
+			temp = []
+			for j in range(3):
+				temp.append(start)
+				start = start + 1
+			x_gene.append(temp)
+			label.append((-1)**digit)
+		print x_gene
+		print label
+		with open(path_output + 'datafile/x_gene_' + str(digit) + '_sigma' + str(sigma) + '.pickle', 'wb') as fp:
+			pickle.dump(x_gene, fp)
+		with open(path_output + 'datafile/x_label_' + str(digit) + '_sigma' + str(sigma) + '.pickle', 'wb') as fp:
+			pickle.dump(label, fp)
 
 data = average(concatenate((array([data15]), array([data20])), axis=0), axis=0) # stack 2 arrays (each is 1 by 2) and average and get 1 array
 

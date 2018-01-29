@@ -138,7 +138,7 @@ class WassersteinGAN(object):
                 # fig = plt.figure(self.data + '.' + self.model)
                 # grid_show(fig, bx, xs.shape)
                 # fig.savefig('result/genefig/{}/{}.jpg'.format(self.data, t)) # changed
-            #
+
             # if t % self.save_size == 0:  # store generator and discriminator, new added
             #     saver = tf.train.Saver()
             #     save_path = saver.save(self.sess, "result/sesssave/sess.ckpt")

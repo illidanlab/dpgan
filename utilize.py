@@ -1,18 +1,16 @@
-# public available function
-from numpy import array, delete
-import cPickle as pickle
+import matplotlib
+matplotlib.use('agg')
+from pylab import *
+from sklearn.preprocessing import binarize
+from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, roc_auc_score
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-import matplotlib
-matplotlib.use('agg')
+import cPickle as pickle
 import os, struct
-from pylab import *
 from array import array as pyarray
-from numpy import zeros, random
+from numpy import zeros, random, concatenate, copy, array, delete
 from PIL import Image
-from sklearn.preprocessing import binarize
-from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, roc_auc_score
 
 
 def normlization(image):
@@ -467,15 +465,119 @@ def Rsample(data, label, bs):
     a = random.choice(len(label), bs, replace=False)
     return data[a], label[a]
 
-def MNIST_c(path, digits):
-    '''classification task to test the quality of generated data of MNIST.'''
-    files = os.listdir(path)
+def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_test, iter, C):
+    '''classification task to test the quality of generated data of MNIST
+    number_train: number of training points from each digit, randomly selected
+    number_test: number of testing points from each digit, randomly selected
+    iter: time of random selection
+    C: Logistic regression's parameter
+    test see "test code of MNIST_c" in test.py
+    '''
+    files = os.listdir(file_path) # contains all digits (all pairs) from all privacy levels
+    files_1st = [] # store files correspondent to 1st digit
+    files_2nd = []  # store files correspondent to 2nd digit
 
-    with open(path + files[0], 'rb') as f:
-        mnist_data = pickle.load(f)
+    for f in files: # select those only from given digit pairs
+        if ('x_gene_' + digit_pair[0]) in f:
+            files_1st.append(f)
+        elif ('x_gene_' + digit_pair[1]) in f:
+            files_2nd.append(f)
+        else:
+            continue
 
+    files_1st.sort()
+    files_2nd.sort()
 
+    data_train_1st, label_train_1st = loaddata(digit_pair[0], 'training', data_path)
+    data_train_2nd, label_train_2nd = loaddata(digit_pair[1], 'training', data_path)
+    data_test_1st, label_test_1st = loaddata(digit_pair[0], 'testing', data_path)
+    data_test_2nd, label_test_2nd = loaddata(digit_pair[1], 'testing', data_path)
 
+    dict = {} # store all generated data
+    for i in range(len(files_1st)):
+        with open(file_path + files_1st[i], 'rb') as f:
+            data_1st = array(pickle.load(f))
+            dict['data_' + files_1st[i]] = data_1st
+        with open(file_path + files_2nd[i], 'rb') as f:
+            data_2nd = array(pickle.load(f))
+            dict['data_' + files_2nd[i]] = data_2nd
+        label_1st = copy(label_train_1st) # create label, in wgan.py, we generate equal number of data as training samples.
+        label_2nd = copy(label_train_2nd)
+        dict['label_' + files_1st[i]] = array(label_1st)
+        dict['label_' + files_2nd[i]] = array(label_2nd)
+
+    accuracy = [] # training and generated
+    for i in range(len(files_1st)+1):
+        accuracy.append([])
+
+    for i in range(iter):
+        # testing data
+        a1 = random.choice(len(label_test_1st), number_test, replace=False)
+        data_test_1st_s = data_test_1st[a1]
+        label_test_1st_s = label_test_1st[a1]
+        a2 = random.choice(len(label_test_2nd), number_test, replace=False)
+        data_test_2nd_s = data_test_2nd[a2]
+        label_test_2nd_s = label_test_2nd[a2]
+        data_test_s = concatenate((data_test_1st_s, data_test_2nd_s), axis=0)
+        label_test_s = concatenate((label_test_1st_s, label_test_2nd_s))
+        for j in range(len(label_test_s)):
+            if label_test_s[j] == digit_pair[0]:
+                label_test_s[j] = +1
+            else:
+                label_test_s[j] = -1
+
+        # training data
+        a1 = random.choice(len(label_train_1st), number_train, replace=False) # random selection
+        data_train_1st_s = data_train_1st[a1]
+        label_train_1st_s = label_train_1st[a1]
+        a2 = random.choice(len(label_train_1st), number_train, replace=False)
+        data_train_2nd_s = data_train_2nd[a2]
+        label_train_2nd_s = label_train_2nd[a2]
+        data_train_s = concatenate((data_train_1st_s, data_train_2nd_s), axis=0) # merge 2 digits
+        label_train_s = concatenate((label_train_1st_s, label_train_2nd_s))
+        for j in range(len(label_train_s)):
+            if label_train_s[j] == digit_pair[0]:
+                label_train_s[j] = +1
+            else:
+                label_train_s[j] = -1
+
+        # https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
+        logisticRegr = linear_model.LogisticRegression(solver='lbfgs', C=C)
+        logisticRegr.fit(data_train_s, label_train_s)
+        accuracy[0].append(logisticRegr.score(data_test_s, label_test_s))
+
+        # generated data
+        for j in range(len(files_1st)):
+            data_1st = dict['data_' + files_1st[j]]
+            data_2nd = dict['data_' + files_2nd[j]]
+            label_1st = dict['label_' + files_1st[j]]
+            label_2nd = dict['label_' + files_2nd[j]]
+            data_1st_s = data_1st[a1]
+            label_1st_s = label_1st[a1]
+            data_2nd_s = data_2nd[a2]
+            label_2nd_s = label_2nd[a2]
+            data_s = concatenate((data_1st_s, data_2nd_s), axis=0)
+            label_s = concatenate((label_1st_s, label_2nd_s))
+            for k in range(len(label_s)):
+                if label_s[k] == digit_pair[0]:
+                    label_s[k] = +1
+                else:
+                    label_s[k] = -1
+
+            logisticRegr = linear_model.LogisticRegression(solver='lbfgs', C=C)
+            logisticRegr.fit(data_s, label_s)
+            accuracy[j+1].append(logisticRegr.score(data_test_s, label_test_s))
+
+    with open(path_output + 'datafile/acc.pickle', 'wb') as fp: # store accuracy data
+        pickle.dump(accuracy, fp)
+    print files_1st
+    Name = ['Training', '0', '5', '10', '20']
+    plt.boxplot(accuracy)
+    plt.title('Accuracy of classifier build from training and generated data')
+    plt.xlabel(Name)
+    plt.ylabel('Accuracy')
+    plt.savefig(path_output + 'genefinalfig/Accuracy.png')  # save map with trajectory
+    plt.close()
 
 
 # load data and labels into matrix of specific digit
