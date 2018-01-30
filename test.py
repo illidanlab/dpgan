@@ -193,6 +193,15 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
               [0.5918, 0.6948, 0.904, 0.3721],
               [0.0921, 0.2481, 0.1188, 0.1366]])
 
+# draw several generated image
+path = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/"
+with open(path + "datafile/x_gene_1_sigma10.pickle", 'rb') as f:
+	data = array(pickle.load(f))
+for i in range(10):
+	pixels = data[i].reshape((28, 28))
+	plt.imshow(pixels, cmap='gray')
+	plt.savefig(path + 'genefinalfig/test' + str(i) + '.png') # Visualize MNIST dataset
+
 # test code of MNIST_c
 file_path = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/datafile/"
 data_path = ""

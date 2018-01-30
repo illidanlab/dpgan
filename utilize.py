@@ -512,14 +512,17 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
 
     for i in range(iter):
         # testing data
-        a1 = random.choice(len(label_test_1st), number_test, replace=False)
-        data_test_1st_s = data_test_1st[a1]
-        label_test_1st_s = label_test_1st[a1]
-        a2 = random.choice(len(label_test_2nd), number_test, replace=False)
-        data_test_2nd_s = data_test_2nd[a2]
-        label_test_2nd_s = label_test_2nd[a2]
-        data_test_s = concatenate((data_test_1st_s, data_test_2nd_s), axis=0)
-        label_test_s = concatenate((label_test_1st_s, label_test_2nd_s))
+        # a1 = random.choice(len(label_test_1st), number_test, replace=False) # random selection
+        # data_test_1st_s = data_test_1st[a1]
+        # label_test_1st_s = label_test_1st[a1]
+        # a2 = random.choice(len(label_test_2nd), number_test, replace=False)
+        # data_test_2nd_s = data_test_2nd[a2]
+        # label_test_2nd_s = label_test_2nd[a2]
+        # data_test_s = concatenate((data_test_1st_s, data_test_2nd_s), axis=0)
+        # label_test_s = concatenate((label_test_1st_s, label_test_2nd_s))
+
+        data_test_s = concatenate((data_test_1st, data_test_2nd), axis=0) # no random selection
+        label_test_s = concatenate((label_test_1st, label_test_2nd))
         for j in range(len(label_test_s)):
             if label_test_s[j] == digit_pair[0]:
                 label_test_s[j] = +1
@@ -571,7 +574,7 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
     with open(path_output + 'datafile/acc.pickle', 'wb') as fp: # store accuracy data
         pickle.dump(accuracy, fp)
     print files_1st
-    Name = ['Training', '0', '5', '10', '20']
+    Name = ['Training', '0.0', '5.0', '10.0', '20.0']
     plt.boxplot(accuracy)
     plt.title('Accuracy of classifier build from training and generated data')
     plt.xlabel(Name)

@@ -11,12 +11,15 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cPickle as pickle
 from sklearn import linear_model
+from numpy import linalg as LA
 
 _VALIDATION_RATIO = 0.1
 
-
 class Medwgan(object):
     def __init__(self,
+                 db,
+                 cilpc,
+                 std,
                  dataType='binary',
                  inputDim=1071,
                  embeddingDim=128,
@@ -28,15 +31,17 @@ class Medwgan(object):
                  bnDecay=0.99,
                  l2scale=2.5e-5,
                  learning_rate = 5e-4):
+        self.db = db
+        self.cilpc = cilpc
+        self.std = std
         self.inputDim = inputDim
         self.embeddingDim = embeddingDim
         self.generatorDims = list(generatorDims) + [embeddingDim]
         self.randomDim = randomDim
         self.dataType = dataType
-        self.db = 0.1
-        self.cilpc = 0.1
         self.learning_rate = learning_rate
         self.wdis_store = []
+
         if dataType == 'binary':
             self.aeActivation = tf.nn.tanh
         else:
@@ -54,7 +59,7 @@ class Medwgan(object):
         data = np.load(dataPath)
         if self.dataType == 'binary':
             data = np.clip(data, 0, 1)
-        self.trainX, self.validX = train_test_split(data, test_size=_VALIDATION_RATIO, random_state=0)
+        self.trainX, self.validX = train_test_split(data, test_size=_VALIDATION_RATIO, random_state=0) # (self.trainX).shape: (41868, 1071), (self.validX).shape: (4652, 1071)
 
     # def loadData(self, dataPath=''):
     #     data = np.load(dataPath)
@@ -185,7 +190,7 @@ class Medwgan(object):
 
         y_hat_fake = self.getDiscriminatorResults(x_decoded, keepRate, reuse=True)
 
-        loss_d = -tf.reduce_mean(y_hat_real) + tf.reduce_mean(y_hat_fake)
+        loss_d = -tf.reduce_mean(y_hat_real) + tf.reduce_mean(y_hat_fake) # WGAN, no log
         loss_g = -tf.reduce_mean(y_hat_fake)
 
         return loss_d, loss_g, y_hat_real, y_hat_fake
@@ -282,17 +287,17 @@ class Medwgan(object):
         all_regs = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
 
         optimize_ae = tf.train.AdamOptimizer().minimize(loss_ae + sum(all_regs), var_list=ae_vars)
-        # optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)  # DP case
-        # grads_and_vars = optimize_d.compute_gradients(loss_d + sum(all_regs), var_list=d_vars)
-        # dp_grads_and_vars = []  # noisy version
-        # for gv in grads_and_vars:  # for each pair
-        #     g = gv[0]  # get the gradient
-        #     #print g # shape of all vars
-        #     if g is not None:  # skip None case
-        #         g = self.dpnoise(g, batchSize)
-        #     dp_grads_and_vars.append((g, gv[1]))
-        # optimize_d_new = optimize_d.apply_gradients(dp_grads_and_vars)
-        optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_d + sum(all_regs), var_list=d_vars)
+        optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)  # DP case
+        grads_and_vars = optimize_d.compute_gradients(loss_d + sum(all_regs), var_list=d_vars)
+        dp_grads_and_vars = []  # noisy version
+        for gv in grads_and_vars:  # for each pair
+            g = gv[0]  # get the gradient
+            #print g # shape of all vars
+            if g is not None:  # skip None case
+                g = self.dpnoise(g, batchSize)
+            dp_grads_and_vars.append((g, gv[1]))
+        optimize_d_new = optimize_d.apply_gradients(dp_grads_and_vars)
+        # optimize_d = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_d + sum(all_regs), var_list=d_vars)
         optimize_g = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(loss_g + sum(all_regs), var_list=g_vars+decodeVariables.values())
         d_clip = [v.assign(tf.clip_by_value(v, -1*self.cilpc,  self.cilpc)) for v in d_vars]
 
@@ -325,7 +330,7 @@ class Medwgan(object):
                     validReverseLoss = 0.
                     buf = 'Pretrain_Epoch:%d, trainLoss:%f, validLoss:%f, validReverseLoss:%f' % (epoch, np.mean(trainLossVec), np.mean(validLossVec), validReverseLoss)
                     print buf
-                    self.print2file(buf, logFile)
+                    # self.print2file(buf, logFile)
 
             idx = np.arange(self.trainX.shape[0])
             for epoch in range(nEpochs):
@@ -336,8 +341,8 @@ class Medwgan(object):
                         batchIdx = np.random.choice(idx, size=batchSize, replace=False)
                         batchX = self.trainX[batchIdx]
                         randomX = np.random.normal(size=(batchSize, self.randomDim))
-                        _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # non-DP case
-                        # _, discLoss = sess.run([optimize_d_new, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # DP case
+                        # _, discLoss = sess.run([optimize_d, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # non-DP case
+                        _, discLoss = sess.run([optimize_d_new, loss_d], feed_dict={x_raw:batchX, x_random:randomX, keep_prob:1.0, bn_train:False}) # DP case
                         sess.run(d_clip)
                         d_loss_vec.append(discLoss)
                         self.wdis_store.append(-1*discLoss)
@@ -361,7 +366,7 @@ class Medwgan(object):
                     validAucVec.append(validAuc)
                 buf = 'Epoch:%d, d_loss:%f, g_loss:%f, accuracy:%f, AUC:%f' % (epoch, np.mean(d_loss_vec), np.mean(g_loss_vec), np.mean(validAccVec), np.mean(validAucVec))
                 print buf
-                self.print2file(buf, logFile)
+                # self.print2file(buf, logFile)
                 # savePath = saver.save(sess, outPath, global_step=epoch)
 
             # generate data
@@ -390,24 +395,21 @@ class Medwgan(object):
     def dpnoise(self, tensor, batchSize):
         '''add noise to tensor'''
         s = tensor.get_shape().as_list()  # get shape of the tensor
-        sigma = 6000.0  # assign it manually
-        cg = 0.0
-        rt = tf.random_normal(s, mean=0.0, stddev=sigma * cg)
+        rt = tf.random_normal(s, mean=0.0, stddev=self.std)
         t = tf.add(tensor, tf.scalar_mul((1.0 / batchSize), rt))
         return t
 
     def loss_store2(self, x_train, x_gene):
-        with open('./result/genefinalfig/generated.pickle', 'wb') as fp:
+        with open('./result/datafile/generated.pickle', 'wb') as fp:
             pickle.dump(x_gene, fp)
-        print "Nonzero element portion in generated data: " + str(float(np.count_nonzero(x_gene)) / (x_gene.shape[0]*x_gene.shape[1]))
-        bins = 100
-        plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
-        plt.title('Histogram of distribution of generated data')
-        plt.xlabel('Generated data value')
-        plt.ylabel('Frequency')
-        plt.savefig('./result/genefinalfig/WGAN-Generated-data-distribution.jpg')
-        plt.close()
-        with open('./result/lossfig/wdis.pickle', 'wb') as fp:
+        # bins = 100
+        # plt.hist(x_gene, bins, facecolor='red', alpha=0.5)
+        # plt.title('Histogram of distribution of generated data')
+        # plt.xlabel('Generated data value')
+        # plt.ylabel('Frequency')
+        # plt.savefig('./result/genefinalfig/WGAN-Generated-data-distribution.jpg')
+        # plt.close()
+        with open('./result/datafile/wdis.pickle', 'wb') as fp:
             pickle.dump(self.wdis_store, fp)
         t = np.arange(len(self.wdis_store))
         plt.plot(t, self.wdis_store, 'r--')
@@ -416,26 +418,26 @@ class Medwgan(object):
         plt.savefig('./result/lossfig/WGAN-W-distance.jpg')
         plt.close()
         rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
-        with open('./result/genefinalfig/rv_pre.pickle', 'wb') as fp:
+        with open('./result/datafile/rv_pre.pickle', 'wb') as fp:
             pickle.dump(rv_pre, fp)
-        with open('./result/genefinalfig/gv_pre.pickle', 'wb') as fp:
+        with open('./result/datafile/gv_pre.pickle', 'wb') as fp:
             pickle.dump(gv_pre, fp)
-        with open('./result/genefinalfig/rv_pro.pickle', 'wb') as fp:
-            pickle.dump(rv_pro, fp)
-        with open('./result/genefinalfig/gv_pro.pickle', 'wb') as fp:
-            pickle.dump(gv_pro, fp)
+        # with open('./result/datafile/rv_pro.pickle', 'wb') as fp:
+        #     pickle.dump(rv_pro, fp)
+        # with open('./result/datafile/gv_pro.pickle', 'wb') as fp:
+        #     pickle.dump(gv_pro, fp)
         plt.scatter(rv_pre, gv_pre)
         plt.title('Dimension-wise prediction, lr')
         plt.xlabel('Real data')
         plt.ylabel('Generated data')
         plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction.jpg')
         plt.close()
-        plt.scatter(rv_pro, gv_pro)
-        plt.title('Dimension-wise probability, lr')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-probability.jpg')
-        plt.close()
+        # plt.scatter(rv_pro, gv_pro)
+        # plt.title('Dimension-wise probability, lr')
+        # plt.xlabel('Real data')
+        # plt.ylabel('Generated data')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-probability.jpg')
+        # plt.close()
         # precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all = dwp(x_train, x_gene, self.validX, self.db)
         # bins = 100
         # plt.hist(precision_r_all, bins, facecolor='red', alpha=0.5)
@@ -591,17 +593,21 @@ def dwp(r, g, te, db, C=1.0):
         f_r, t_r = split(r, i) # separate feature and target
         f_g, t_g = split(g, i)
         f_te, t_te = split(te, i) # these 6 are all numpy array
-        t_g[t_g < db ] = 0  # hard decision boundary
-        t_g[t_g >= db ] = 1
-        if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1): # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
+        t_g[t_g < db] = 0  # hard decision boundary
+        t_g[t_g >= db] = 1
+        if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1):
             print "skip this coordinate"
             continue
+        print "portion of 1, real: " + str(float(np.count_nonzero(t_r)) / len(t_r))
+        print "portion of 1, generated: " + str(float(np.count_nonzero(t_g)) / len(t_g))
+        print "portion of 1, testing: " + str(float(np.count_nonzero(t_te)) / len(t_te))
         model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
         model_r.fit(f_r, t_r)
         label_r = model_r.predict(f_te)
         model_g = linear_model.LogisticRegression(C=C)
         model_g.fit(f_g, t_g)
         label_g = model_r.predict(f_te)
+        print "Norm of difference of models: " + str(LA.norm((model_r.coef_)[0] -(model_g.coef_)[0])) # type((model_r.coef_)[0]): numpy.ndarray, shape: (1070,)
         rv_pre.append(accuracy_score(t_te, label_r)) # accuracy_score
         gv_pre.append(accuracy_score(t_te, label_g))
         rv_pro.append(float(np.count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
@@ -644,8 +650,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=100, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=1000, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=2, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=2, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
@@ -662,7 +668,11 @@ if __name__ == '__main__':
     # data = np.load(args.data_file)
     inputDim = 1071
 
-    mg = Medwgan(dataType=args.data_type,
+    mg = Medwgan(
+                db=0.5,
+                cilpc=0.1,
+                std=5.0,
+                dataType=args.data_type,
                 inputDim=inputDim,
                 embeddingDim=args.embed_size,
                 randomDim=args.noise_size,
