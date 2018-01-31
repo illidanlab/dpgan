@@ -407,7 +407,7 @@ class Medwgan(object):
         # plt.title('Histogram of distribution of generated data')
         # plt.xlabel('Generated data value')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/WGAN-Generated-data-distribution.jpg')
+        # plt.savefig('./result/genefinalfig/WGAN-Generated-data-distribution.png')
         # plt.close()
         with open('./result/datafile/wdis.pickle', 'wb') as fp:
             pickle.dump(self.wdis_store, fp)
@@ -415,122 +415,150 @@ class Medwgan(object):
         plt.plot(t, self.wdis_store, 'r--')
         plt.xlabel('Iterations')
         plt.ylabel('Wasserstein distance')
-        plt.savefig('./result/lossfig/WGAN-W-distance.jpg')
+        plt.savefig('./result/lossfig/WGAN-W-distance.png')
         plt.close()
-        rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
-        with open('./result/datafile/rv_pre.pickle', 'wb') as fp:
-            pickle.dump(rv_pre, fp)
-        with open('./result/datafile/gv_pre.pickle', 'wb') as fp:
-            pickle.dump(gv_pre, fp)
+
+        # rv_pre, gv_pre, rv_pro, gv_pro = dwp(x_train, x_gene, self.validX, self.db)
+        # with open('./result/datafile/rv_pre.pickle', 'wb') as fp:
+        #     pickle.dump(rv_pre, fp)
+        # with open('./result/datafile/gv_pre.pickle', 'wb') as fp:
+        #     pickle.dump(gv_pre, fp)
         # with open('./result/datafile/rv_pro.pickle', 'wb') as fp:
         #     pickle.dump(rv_pro, fp)
         # with open('./result/datafile/gv_pro.pickle', 'wb') as fp:
         #     pickle.dump(gv_pro, fp)
-        plt.scatter(rv_pre, gv_pre)
-        plt.title('Dimension-wise prediction, lr')
-        plt.xlabel('Real data')
-        plt.ylabel('Generated data')
-        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction.jpg')
-        plt.close()
+        # plt.scatter(rv_pre, gv_pre)
+        # plt.title('Dimension-wise prediction, lr')
+        # plt.xlabel('Real data')
+        # plt.ylabel('Generated data')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction.png')
+        # plt.close()
         # plt.scatter(rv_pro, gv_pro)
         # plt.title('Dimension-wise probability, lr')
         # plt.xlabel('Real data')
         # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-probability.jpg')
+        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-probability.png')
         # plt.close()
-        # precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all = dwp(x_train, x_gene, self.validX, self.db)
+
+        precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all = dwp(x_train, x_gene, self.validX, self.db)
         # bins = 100
         # plt.hist(precision_r_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of precision on each dimension of training data, lr')
         # plt.xlabel('Precision (total number: ' + str(len(precision_r_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_precision_r.jpg')
+        # plt.savefig('./result/genefinalfig/hist_precision_r.p')
         # plt.close()
         # plt.hist(precision_g_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of precision on each dimension of generated data, lr')
         # plt.xlabel('Precision (total number: ' + str(len(precision_g_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_precision_g.jpg')
+        # plt.savefig('./result/genefinalfig/hist_precision_g.png')
         # plt.close()
         # plt.hist(recall_r_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of recall on each dimension of training data, lr')
         # plt.xlabel('Recall (total number: ' + str(len(recall_r_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_recall_r.jpg')
+        # plt.savefig('./result/genefinalfig/hist_recall_r.png')
         # plt.close()
         # plt.hist(recall_g_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of recall on each dimension of generated data, lr')
         # plt.xlabel('Recall (total number: ' + str(len(recall_g_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_recall_g.jpg')
+        # plt.savefig('./result/genefinalfig/hist_recall_g.png')
         # plt.close()
         # plt.hist(acc_r_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of accuracy on each dimension of training data, lr')
         # plt.xlabel('Accuracy (total number: ' + str(len(acc_r_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_acc_r.jpg')
+        # plt.savefig('./result/genefinalfig/hist_acc_r.png')
         # plt.close()
         # plt.hist(acc_g_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of accuracy on each dimension of generated data, lr')
         # plt.xlabel('Accuracy (total number: ' + str(len(acc_g_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_acc_g.jpg')
+        # plt.savefig('./result/genefinalfig/hist_acc_g.png')
         # plt.close()
         # plt.hist(f1score_r_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of f1score on each dimension of training data, lr')
         # plt.xlabel('f1score (total number: ' + str(len(f1score_r_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_f1score_r.jpg')
+        # plt.savefig('./result/genefinalfig/hist_f1score_r.png')
         # plt.close()
         # plt.hist(f1score_g_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of f1score on each dimension of generated data, lr')
         # plt.xlabel('f1score (total number: ' + str(len(f1score_g_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_f1score_g.jpg')
+        # plt.savefig('./result/genefinalfig/hist_f1score_g.png')
         # plt.close()
         # plt.hist(auc_r_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of AUC on each dimension of training data, lr')
         # plt.xlabel('AUC (total number: ' + str(len(auc_r_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_AUC_r.jpg')
+        # plt.savefig('./result/genefinalfig/hist_AUC_r.png')
         # plt.close()
         # plt.hist(auc_g_all, bins, facecolor='red', alpha=0.5)
         # plt.title('Histogram of AUC on each dimension of generated data, lr')
         # plt.xlabel('AUC (total number: ' + str(len(auc_g_all)) + ' )')
         # plt.ylabel('Frequency')
-        # plt.savefig('./result/genefinalfig/hist_AUC_g.jpg')
+        # plt.savefig('./result/genefinalfig/hist_AUC_g.png')
         # plt.close()
-        # # scatter plot begins
-        # plt.scatter(precision_r_all, precision_g_all)
-        # plt.title('Dimension-wise prediction, precision')
-        # plt.xlabel('Real data')
-        # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-precision.jpg')
-        # plt.close()
-        # plt.scatter(recall_r_all, recall_g_all)
-        # plt.title('Dimension-wise prediction, recall')
-        # plt.xlabel('Real data')
-        # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-recall.jpg')
-        # plt.close()
-        # plt.scatter(acc_r_all, acc_g_all)
-        # plt.title('Dimension-wise prediction, accuracy')
-        # plt.xlabel('Real data')
-        # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-accuracy.jpg')
-        # plt.close()
-        # plt.scatter(f1score_r_all, f1score_g_all)
-        # plt.title('Dimension-wise prediction, f1score')
-        # plt.xlabel('Real data')
-        # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-f1score.jpg')
-        # plt.close()
-        # plt.scatter(auc_r_all, auc_g_all)
-        # plt.title('Dimension-wise prediction, AUC')
-        # plt.xlabel('Real data')
-        # plt.ylabel('Generated data')
-        # plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-AUC.jpg')
-        # plt.close()
+        # scatter plot begins
+        plt.scatter(precision_r_all, precision_g_all)
+        plt.title('Dimension-wise prediction, precision')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-precision.png')
+        plt.close()
+        plt.scatter(recall_r_all, recall_g_all)
+        plt.title('Dimension-wise prediction, recall')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-recall.png')
+        plt.close()
+        plt.scatter(acc_r_all, acc_g_all)
+        plt.title('Dimension-wise prediction, accuracy')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-accuracy.png')
+        plt.close()
+        plt.scatter(f1score_r_all, f1score_g_all)
+        plt.title('Dimension-wise prediction, f1score')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-f1score.png')
+        plt.close()
+        plt.scatter(auc_r_all, auc_g_all)
+        plt.title('Dimension-wise prediction, AUC')
+        plt.xlabel('Real data')
+        plt.ylabel('Generated data')
+        plt.savefig('./result/genefinalfig/WGAN-dim-wise-prediction-AUC.png')
+        plt.close()
+        print 'Number of points in AUC: ' + str(len(auc_r_all))
+        count = 0
+        for i in range(len(auc_r_all)):
+            if auc_r_all[i] > auc_g_all[i]:
+                count = count + 1
+        print 'Number of points under x=y line: ' + str(count)
+        with open('./result/datafile/precision_r_all.pickle', 'wb') as fp:
+            pickle.dump(precision_r_all, fp)
+        with open('./result/datafile/precision_g_all.pickle', 'wb') as fp:
+            pickle.dump(precision_g_all, fp)
+        with open('./result/datafile/recall_r_all.pickle', 'wb') as fp:
+            pickle.dump(recall_r_all, fp)
+        with open('./result/datafile/recall_g_all.pickle', 'wb') as fp:
+            pickle.dump(recall_g_all, fp)
+        with open('./result/datafile/acc_r_all.pickle', 'wb') as fp:
+            pickle.dump(acc_r_all, fp)
+        with open('./result/datafile/acc_g_all.pickle', 'wb') as fp:
+            pickle.dump(acc_g_all, fp)
+        with open('./result/datafile/f1score_r_all.pickle', 'wb') as fp:
+            pickle.dump(f1score_r_all, fp)
+        with open('./result/datafile/f1score_g_all.pickle', 'wb') as fp:
+            pickle.dump(f1score_g_all, fp)
+        with open('./result/datafile/auc_r_all.pickle', 'wb') as fp:
+            pickle.dump(auc_r_all, fp)
+        with open('./result/datafile/auc_g_all.pickle', 'wb') as fp:
+            pickle.dump(auc_g_all, fp)
         # Rareness of diseases in MIMIC-III
         # self.trainX = np.clip(self.trainX, 0, 1)
         # # bar graph
@@ -541,24 +569,62 @@ class Medwgan(object):
         # plt.xlabel('ICD-9 codes: 0001 to 1071')
         # plt.ylabel('Rareness')
         # plt.title('Occur of diseases in MIMIC-III')
-        # plt.savefig('./result/genefinalfig/Rareness.jpg')
+        # plt.savefig('./result/genefinalfig/Rareness.png')
         # plt.close()
+
+def balance(data, label):
+    '''balance a data according to its label'''
+    index_0 = np.where(label == 0)[0] # index of label that is equal to 0
+    index_1 = np.where(label == 1)[0]
+    data_0 =  np.array([data[i] for i in index_0]) # index of data that with label 0
+    data_1 = np.array([data[i] for i in index_1])
+    if len(index_0) > len(index_1):
+        data_0_disc, temp_remain = train_test_split(data_0, test_size=len(data_1), random_state=0)
+        data = np.concatenate((temp_remain, data_1), axis=0)
+    elif len(index_0) < len(index_1):
+        data_1_disc, temp_remain = train_test_split(data_1, test_size=len(data_0), random_state=0)
+        data = np.concatenate((data_0, temp_remain), axis=0)
+    else:
+        return data, label
+
+    label_new = [0]*(len(data)/2)
+    label_new.extend([1]*(len(data)/2))
+
+    return data, np.array(label_new)
+
+
+def split(matrix, col):
+    '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
+    t_r = matrix[:,col] # shape: (len(t_r),)
+    f_r = np.delete(matrix, col, 1)
+    return f_r, t_r
 
 def statistics(r, g, te, db, col):
     '''Column specific statistics (precision, recall(Sensitivity), f1-score, AUC)'''
     f_r, t_r = split(r, col)  # separate feature and target
     f_g, t_g = split(g, col)
     f_te, t_te = split(te, col)  # these 6 parts are all numpy array
+
     t_g[t_g < db] = 0  # hard decision boundary
     t_g[t_g >= db] = 1
-    if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1) or (np.unique(t_te).size == 1):  # if only those coordinates correspondent to top codes are kept, no coordinate should be skipped, if those patients that doesn't contain top ICD9 codes were removed, more coordinates will be skipped
+
+    print "portion of 1, real: " + str(float(np.count_nonzero(t_r)) / len(t_r))
+    print "portion of 1, generated: " + str(float(np.count_nonzero(t_g)) / len(t_g))
+    print "portion of 1, testing: " + str(float(np.count_nonzero(t_te)) / len(t_te))
+    if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1):
         return [], [], [], [], [], [], [], [], [], []
+
+    # balance training set
+    f_r, t_r = balance(f_r, t_r)
+    f_g, t_g = balance(f_g, t_g)
+
     model_r = linear_model.LogisticRegression()  # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
     model_r.fit(f_r, t_r)
     label_r = model_r.predict(f_te) # decision boundary is 0
     model_g = linear_model.LogisticRegression()
     model_g.fit(f_g, t_g)
-    label_g = model_r.predict(f_te)
+    label_g = model_g.predict(f_te)
+    # print "Norm of difference of models: " + str(LA.norm((model_r.coef_)[0] - (model_g.coef_)[0]))  # type((model_r.coef_)[0]): numpy.ndarray, shape: (1070,)
     precision_r = precision_score(t_te, label_r) # precision
     precision_g = precision_score(t_te, label_g)
     recall_r = recall_score(t_te, label_r) # recall
@@ -574,67 +640,71 @@ def statistics(r, g, te, db, col):
 
 def dwp(r, g, te, db, C=1.0):
     '''Dimension-wise prediction & dimension-wise probability, r for real, g for generated, t for test, all without separated feature and target, all are numpy array'''
-    rv_pre = []
-    gv_pre = []
-    rv_pro = []
-    gv_pro = []
-    # precision_r_all = []
-    # precision_g_all = []
-    # recall_r_all = []
-    # recall_g_all = []
-    # acc_r_all = []
-    # acc_g_all = []
-    # f1score_r_all = []
-    # f1score_g_all = []
-    # auc_r_all = []
-    # auc_g_all = []
+    # rv_pre = []
+    # gv_pre = []
+    # rv_pro = []
+    # gv_pro = []
+    precision_r_all = []
+    precision_g_all = []
+    recall_r_all = []
+    recall_g_all = []
+    acc_r_all = []
+    acc_g_all = []
+    f1score_r_all = []
+    f1score_g_all = []
+    auc_r_all = []
+    auc_g_all = []
     for i in range(len(r[0])):
         print i
-        f_r, t_r = split(r, i) # separate feature and target
-        f_g, t_g = split(g, i)
-        f_te, t_te = split(te, i) # these 6 are all numpy array
-        t_g[t_g < db] = 0  # hard decision boundary
-        t_g[t_g >= db] = 1
-        if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1):
-            print "skip this coordinate"
-            continue
-        print "portion of 1, real: " + str(float(np.count_nonzero(t_r)) / len(t_r))
-        print "portion of 1, generated: " + str(float(np.count_nonzero(t_g)) / len(t_g))
-        print "portion of 1, testing: " + str(float(np.count_nonzero(t_te)) / len(t_te))
-        model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
-        model_r.fit(f_r, t_r)
-        label_r = model_r.predict(f_te)
-        model_g = linear_model.LogisticRegression(C=C)
-        model_g.fit(f_g, t_g)
-        label_g = model_r.predict(f_te)
-        print "Norm of difference of models: " + str(LA.norm((model_r.coef_)[0] -(model_g.coef_)[0])) # type((model_r.coef_)[0]): numpy.ndarray, shape: (1070,)
-        rv_pre.append(accuracy_score(t_te, label_r)) # accuracy_score
-        gv_pre.append(accuracy_score(t_te, label_g))
-        rv_pro.append(float(np.count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
-        gv_pro.append(float(np.count_nonzero(t_g))/len(t_g))
-        # precision_r, precision_g, recall_r, recall_g, acc_r, acc_g, f1score_r, f1score_g, auc_r, auc_g = statistics(r, g, te, db, i)
-        # if precision_r == []:
+
+        # f_r, t_r = split(r, i) # separate feature and target
+        # f_g, t_g = split(g, i)
+        # f_te, t_te = split(te, i) # these 6 are all numpy array
+        # t_g[t_g < db] = 0  # hard decision boundary
+        # t_g[t_g >= db] = 1
+
+        # print "portion of 1, real: " + str(float(np.count_nonzero(t_r)) / len(t_r))
+        # print "portion of 1, generated: " + str(float(np.count_nonzero(t_g)) / len(t_g))
+        # print "portion of 1, testing: " + str(float(np.count_nonzero(t_te)) / len(t_te))
+        # if (np.unique(t_r).size == 1) or (np.unique(t_g).size == 1):
         #     print "skip this coordinate"
         #     continue
-        # precision_r_all.append(precision_r)
-        # precision_g_all.append(precision_g)
-        # recall_r_all.append(recall_r)
-        # recall_g_all.append(recall_g)
-        # acc_r_all.append(acc_r)
-        # acc_g_all.append(acc_g)
-        # f1score_r_all.append(f1score_r)
-        # f1score_g_all.append(f1score_g)
-        # auc_r_all.append(auc_r)
-        # auc_g_all.append(auc_g)
 
-    return rv_pre, gv_pre, rv_pro, gv_pro
-    # return precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all
+        # # balance training set
+        # f_r, t_r = balance(f_r, t_r)
+        # f_g, t_g = balance(f_g, t_g)
 
-def split(matrix, col):
-    '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
-    t_r = matrix[:,col] # shape: (len(t_r),)
-    f_r = np.delete(matrix, col, 1)
-    return f_r, t_r
+        # model_r = linear_model.LogisticRegression(C=C) # logistic regression, if labels are all 0, this will cause: ValueError: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+        # model_r.fit(f_r, t_r)
+        # label_r = model_r.predict(f_te)
+        # model_g = linear_model.LogisticRegression(C=C)
+        # model_g.fit(f_g, t_g)
+        # label_g = model_g.predict(f_te)
+        # # print "Norm of difference of models: " + str(LA.norm((model_r.coef_)[0] -(model_g.coef_)[0])) # type((model_r.coef_)[0]): numpy.ndarray, shape: (1070,)
+        # s_r = accuracy_score(t_te, label_r)
+        # s_g = accuracy_score(t_te, label_g)
+        # rv_pre.append(s_r) # accuracy_score
+        # gv_pre.append(s_g)
+        # rv_pro.append(float(np.count_nonzero(t_r))/len(t_r))  # dimension-wise probability, see "https://onlinecourses.science.psu.edu/stat504/node/28"
+        # gv_pro.append(float(np.count_nonzero(t_g))/len(t_g))
+
+        precision_r, precision_g, recall_r, recall_g, acc_r, acc_g, f1score_r, f1score_g, auc_r, auc_g = statistics(r, g, te, db, i)
+        if precision_r == []:
+            print "skip this coordinate"
+            continue
+        precision_r_all.append(precision_r)
+        precision_g_all.append(precision_g)
+        recall_r_all.append(recall_r)
+        recall_g_all.append(recall_g)
+        acc_r_all.append(acc_r)
+        acc_g_all.append(acc_g)
+        f1score_r_all.append(f1score_r)
+        f1score_g_all.append(f1score_g)
+        auc_r_all.append(auc_r)
+        auc_g_all.append(auc_g)
+
+    # return rv_pre, gv_pre, rv_pro, gv_pro
+    return precision_r_all, precision_g_all, recall_r_all, recall_g_all, acc_r_all, acc_g_all, f1score_r_all, f1score_g_all, auc_r_all, auc_g_all
 
 def parse_arguments(parser):
     parser.add_argument('--embed_size', type=int, default=128, help='The dimension size of the embedding, which will be generated by the generator. (default value: 128)')
@@ -650,8 +720,8 @@ def parse_arguments(parser):
     parser.add_argument('data_file', type=str, metavar='<patient_matrix>', help='The path to the numpy matrix containing aggregated patient records.')
     parser.add_argument('out_file', type=str, metavar='<out_file>', help='The path to the output models.')
     parser.add_argument('--model_file', type=str, metavar='<model_file>', default='', help='The path to the model file, in case you want to continue training. (default value: '')')
-    parser.add_argument('--n_pretrain_epoch', type=int, default=2, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
-    parser.add_argument('--n_epoch', type=int, default=2, help='The number of epochs to train medGAN. (default value: 1000)')
+    parser.add_argument('--n_pretrain_epoch', type=int, default=100, help='The number of epochs to pre-train the autoencoder. (default value: 100)')
+    parser.add_argument('--n_epoch', type=int, default=1000, help='The number of epochs to train medGAN. (default value: 1000)')
     parser.add_argument('--n_discriminator_update', type=int, default=2, help='The number of times to update the discriminator per epoch. (default value: 2)')
     parser.add_argument('--n_generator_update', type=int, default=1, help='The number of times to update the generator per epoch. (default value: 1)')
     parser.add_argument('--pretrain_batch_size', type=int, default=100, help='The size of a single mini-batch for pre-training the autoencoder. (default value: 100)')
@@ -671,7 +741,7 @@ if __name__ == '__main__':
     mg = Medwgan(
                 db=0.5,
                 cilpc=0.1,
-                std=5.0,
+                std=60.0,
                 dataType=args.data_type,
                 inputDim=inputDim,
                 embeddingDim=args.embed_size,

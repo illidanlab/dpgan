@@ -487,6 +487,7 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
 
     files_1st.sort()
     files_2nd.sort()
+    print files_1st
 
     data_train_1st, label_train_1st = loaddata(digit_pair[0], 'training', data_path)
     data_train_2nd, label_train_2nd = loaddata(digit_pair[1], 'training', data_path)
@@ -520,8 +521,8 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
         # label_test_2nd_s = label_test_2nd[a2]
         # data_test_s = concatenate((data_test_1st_s, data_test_2nd_s), axis=0)
         # label_test_s = concatenate((label_test_1st_s, label_test_2nd_s))
-
-        data_test_s = concatenate((data_test_1st, data_test_2nd), axis=0) # no random selection
+        print 'iter' + str(i)
+        data_test_s = concatenate((data_test_1st, data_test_2nd), axis=0) # random select from testing set
         label_test_s = concatenate((label_test_1st, label_test_2nd))
         for j in range(len(label_test_s)):
             if label_test_s[j] == digit_pair[0]:
@@ -573,7 +574,7 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
 
     with open(path_output + 'datafile/acc.pickle', 'wb') as fp: # store accuracy data
         pickle.dump(accuracy, fp)
-    print files_1st
+
     Name = ['Training', '0.0', '5.0', '10.0', '20.0']
     plt.boxplot(accuracy)
     plt.title('Accuracy of classifier build from training and generated data')
