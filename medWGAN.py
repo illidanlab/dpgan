@@ -592,7 +592,6 @@ def balance(data, label):
 
     return data, np.array(label_new)
 
-
 def split(matrix, col):
     '''split matrix into feature and target (col th column of matrix), matrix \in R^{N*D}, f_r \in R^{N*(D-1)} , t_r \in R^{N*1}'''
     t_r = matrix[:,col] # shape: (len(t_r),)

@@ -9,9 +9,9 @@ from sklearn.svm import SVC
 import cPickle as pickle
 import os, struct
 from array import array as pyarray
-from numpy import zeros, random, concatenate, copy, array, delete
-from PIL import Image
-
+from numpy import zeros, random, concatenate, copy, array, delete, int8
+# from PIL import Image
+import pandas as pd
 
 def normlization(image):
     '''divide each element of a image by 255, if its scale is in [0,255]'''
@@ -166,7 +166,7 @@ def dwp(r, g, te, db=0.5, C=1.0):
         label_r = model_r.predict(f_te)
         model_g = linear_model.LogisticRegression(C=C)
         model_g.fit(f_g, t_g)
-        label_g = model_r.predict(f_te)
+        label_g = model_g.predict(f_te)
         # print label_r
         # print mean(model_r.coef_), count_nonzero(model_r.coef_), mean(model_g.coef_), count_nonzero(model_g.coef_) # statistics of classifiers
         # rv.append(match(label_r, t_te)/(len(t_te)+10**(-10))) # simply match
@@ -465,7 +465,7 @@ def Rsample(data, label, bs):
     a = random.choice(len(label), bs, replace=False)
     return data[a], label[a]
 
-def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_test, iter, C):
+def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, iter, C):
     '''classification task to test the quality of generated data of MNIST
     number_train: number of training points from each digit, randomly selected
     number_test: number of testing points from each digit, randomly selected
@@ -488,19 +488,32 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
     files_1st.sort()
     files_2nd.sort()
     print files_1st
+    print files_2nd
 
-    data_train_1st, label_train_1st = loaddata(digit_pair[0], 'training', data_path)
+    data_train_1st, label_train_1st = loaddata(digit_pair[0], 'training', data_path) # type(label_train_1st[0]): numpy.uint8
     data_train_2nd, label_train_2nd = loaddata(digit_pair[1], 'training', data_path)
     data_test_1st, label_test_1st = loaddata(digit_pair[0], 'testing', data_path)
     data_test_2nd, label_test_2nd = loaddata(digit_pair[1], 'testing', data_path)
 
-    dict = {} # store all generated data
+    data_train_1st = normlization(data_train_1st) # normlization
+    data_train_2nd = normlization(data_train_2nd)
+    data_test_1st = normlization(data_test_1st)
+    data_test_2nd = normlization(data_test_2nd)
+
+    label_train_1st = array([+1] * len(label_train_1st))  # label transformation
+    label_train_2nd = array([-1] * len(label_train_2nd))
+    label_test_1st = array([+1] * len(label_test_1st))
+    label_test_2nd = array([-1] * len(label_test_2nd))
+
+    dict = {} # store all generated data, # of 0: 5923, # of 1: 6742
     for i in range(len(files_1st)):
         with open(file_path + files_1st[i], 'rb') as f:
             data_1st = array(pickle.load(f))
+            data_1st = normlization(data_1st)
             dict['data_' + files_1st[i]] = data_1st
         with open(file_path + files_2nd[i], 'rb') as f:
             data_2nd = array(pickle.load(f))
+            data_2nd = normlization(data_2nd)
             dict['data_' + files_2nd[i]] = data_2nd
         label_1st = copy(label_train_1st) # create label, in wgan.py, we generate equal number of data as training samples.
         label_2nd = copy(label_train_2nd)
@@ -511,39 +524,22 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
     for i in range(len(files_1st)+1):
         accuracy.append([])
 
+    # testing data
+    data_test_s = concatenate((data_test_1st, data_test_2nd), axis=0)  # random select from testing set
+    label_test_s = concatenate((label_test_1st, label_test_2nd))
+
     for i in range(iter):
-        # testing data
-        # a1 = random.choice(len(label_test_1st), number_test, replace=False) # random selection
-        # data_test_1st_s = data_test_1st[a1]
-        # label_test_1st_s = label_test_1st[a1]
-        # a2 = random.choice(len(label_test_2nd), number_test, replace=False)
-        # data_test_2nd_s = data_test_2nd[a2]
-        # label_test_2nd_s = label_test_2nd[a2]
-        # data_test_s = concatenate((data_test_1st_s, data_test_2nd_s), axis=0)
-        # label_test_s = concatenate((label_test_1st_s, label_test_2nd_s))
-        print 'iter' + str(i)
-        data_test_s = concatenate((data_test_1st, data_test_2nd), axis=0) # random select from testing set
-        label_test_s = concatenate((label_test_1st, label_test_2nd))
-        for j in range(len(label_test_s)):
-            if label_test_s[j] == digit_pair[0]:
-                label_test_s[j] = +1
-            else:
-                label_test_s[j] = -1
+        print 'iter ' + str(i)
 
         # training data
         a1 = random.choice(len(label_train_1st), number_train, replace=False) # random selection
         data_train_1st_s = data_train_1st[a1]
         label_train_1st_s = label_train_1st[a1]
-        a2 = random.choice(len(label_train_1st), number_train, replace=False)
+        a2 = random.choice(len(label_train_2nd), number_train, replace=False)
         data_train_2nd_s = data_train_2nd[a2]
         label_train_2nd_s = label_train_2nd[a2]
         data_train_s = concatenate((data_train_1st_s, data_train_2nd_s), axis=0) # merge 2 digits
         label_train_s = concatenate((label_train_1st_s, label_train_2nd_s))
-        for j in range(len(label_train_s)):
-            if label_train_s[j] == digit_pair[0]:
-                label_train_s[j] = +1
-            else:
-                label_train_s[j] = -1
 
         # https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
         logisticRegr = linear_model.LogisticRegression(solver='lbfgs', C=C)
@@ -562,27 +558,23 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_
             label_2nd_s = label_2nd[a2]
             data_s = concatenate((data_1st_s, data_2nd_s), axis=0)
             label_s = concatenate((label_1st_s, label_2nd_s))
-            for k in range(len(label_s)):
-                if label_s[k] == digit_pair[0]:
-                    label_s[k] = +1
-                else:
-                    label_s[k] = -1
 
             logisticRegr = linear_model.LogisticRegression(solver='lbfgs', C=C)
             logisticRegr.fit(data_s, label_s)
             accuracy[j+1].append(logisticRegr.score(data_test_s, label_test_s))
 
+    # accuracy[2], accuracy[4] = accuracy[4], accuracy[2] # due to sort, need to exchange
+    # accuracy[3], accuracy[4] = accuracy[4], accuracy[3]
     with open(path_output + 'datafile/acc.pickle', 'wb') as fp: # store accuracy data
         pickle.dump(accuracy, fp)
 
-    Name = ['Training', '0.0', '5.0', '10.0', '20.0']
+    Name = ['Training', 'infty', '1.92', '0.96', '0.72'] # epsilon value
     plt.boxplot(accuracy)
     plt.title('Accuracy of classifier build from training and generated data')
     plt.xlabel(Name)
     plt.ylabel('Accuracy')
     plt.savefig(path_output + 'genefinalfig/Accuracy.png')  # save map with trajectory
     plt.close()
-
 
 # load data and labels into matrix of specific digit
 def loaddata(digits, dataset, path):  # digits should among 0-9, dataset should be 'training' or 'testing', path is where you store your dataset file

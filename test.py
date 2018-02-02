@@ -196,23 +196,22 @@ data = np.array([[0.3148, 0.0478, 0.6243, 0.4608],
 
 # draw several generated image
 path = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/"
-with open(path + "datafile/x_gene_1_sigma10.pickle", 'rb') as f:
+with open(path + "datafile/x_gene_0_sigma20.pickle", 'rb') as f:
 	data = array(pickle.load(f))
-for i in range(10):
+for i in range(20):
 	pixels = data[i].reshape((28, 28))
 	plt.imshow(pixels, cmap='gray')
 	plt.savefig(path + 'genefinalfig/test' + str(i) + '.png') # Visualize MNIST dataset
 
 # test code of MNIST_c
-file_path = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/datafile/"
-data_path = ""
-path_output = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/"
+file_path = "/home/xieliyan/Dropbox/GPU/GPU4/wgan/result/datafile/"
+data_path = "/home/xieliyan/Desktop/data/MNIST/"
+path_output = "/home/xieliyan/Dropbox/GPU/GPU4/wgan/result/"
 digit_pair = '01'
-number_train = 2
-number_test = 2
-iter = 1
+number_train = 2000
+iter = 5
 C = 1.0
-MNIST_c(file_path, data_path, path_output, digit_pair, number_train, number_test, iter, C)
+MNIST_c(file_path, data_path, path_output, digit_pair, number_train, iter, C)
 
 path_output = "/home/xieliyan/Dropbox/GPU/GPU2/wgan/result/"
 start = 0
