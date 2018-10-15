@@ -62,10 +62,11 @@ class WassersteinGAN(object):
             self.d_rmsprop = tf.train.RMSPropOptimizer(learning_rate=self.lr)  # DP case
             grads_and_vars = self.d_rmsprop.compute_gradients(-1*self.d_loss_reg, var_list=self.d_net.vars)
             dp_grads_and_vars = []  # noisy version
-            for gv in grads_and_vars:  # for each pair
+            _n_layers = len(grads_and_vars)
+            for _ii, gv in enumerate(grads_and_vars):  # for each pair
                 g = gv[0]  # get the gradient, type in loop one: Tensor("gradients/AddN_37:0", shape=(4, 4, 1, 64), dtype=float32)
                 #print g # shape of all vars
-                if g is not None:  # skip None case
+                if (_ii < _n_layers-1) and (g is not None):  # skip None case
                     g = self.dpnoise(g, self.batch_size)  # add noise on the tensor, type in loop one: Tensor("Add:0", shape=(4, 4, 1, 64), dtype=float32)
                 dp_grads_and_vars.append((g, gv[1]))
             self.d_rmsprop_new = self.d_rmsprop.apply_gradients(dp_grads_and_vars) # should assign to a new optimizer
