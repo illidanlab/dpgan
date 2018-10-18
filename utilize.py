@@ -563,14 +563,14 @@ def MNIST_c(file_path, data_path, path_output, digit_pair, number_train, iter, C
             logisticRegr.fit(data_s, label_s)
             accuracy[j+1].append(logisticRegr.score(data_test_s, label_test_s))
 
-    # accuracy[2], accuracy[4] = accuracy[4], accuracy[2] # due to sort, need to exchange
-    # accuracy[3], accuracy[4] = accuracy[4], accuracy[3]
+    accuracy[2], accuracy[4] = accuracy[4], accuracy[2] # due to sort, need to exchange
+    accuracy[3], accuracy[4] = accuracy[4], accuracy[3]
     with open(path_output + 'datafile/acc.pickle', 'wb') as fp: # store accuracy data
         pickle.dump(accuracy, fp)
 
-    Name = ['Training', 'infty', '1.92', '0.96', '0.72'] # epsilon value
+    Name = ['Training', 'infty', '11.5', '5.76', '3.2', '0.72'] # epsilon value
     plt.boxplot(accuracy)
-    plt.title('Accuracy of classifier build from training and generated data')
+    plt.title('Accuracy of classifiers build from training and generated data')
     plt.xlabel(Name)
     plt.ylabel('Accuracy')
     plt.savefig(path_output + 'genefinalfig/Accuracy.png')  # save map with trajectory

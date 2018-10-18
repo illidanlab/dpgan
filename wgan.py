@@ -182,7 +182,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', type=str, default='0')
     args = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
-    digits = ['0', '1']  # MNIST digits need to use
+    digits = ['2', '3', '4', '5']  # MNIST digits need to use
     for digit in digits:
         tf.reset_default_graph()
         data = importlib.import_module(args.data)  # from parser
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         zs = data.NoiseSampler()
         d_net = model.Discriminator()  # mnist/mlp.py, d_net is a instance of class Discriminator
         g_net = model.Generator()
-        sigma_all = 1000.0  # total noise std added
+        sigma_all = 800.0  # total noise std added
         reg = 2.5e-5
         lr = 5e-5
         cilpc = 0.02
@@ -202,6 +202,6 @@ if __name__ == '__main__':
         d_iters = 5
         data_name = 'training'
         data_path = "/home/xieliyan/Desktop/data/MNIST/"
-        path_output = "/home/xieliyan/Dropbox/GPU/GPU4/wgan/result/"
+        path_output = "/home/xieliyan/Dropbox/GPU/GPU3/wgan/result/"
         wgan = WassersteinGAN(g_net, d_net, zs, args.data, args.model, sigma_all, digit, reg, lr, cilpc, batch_size, num_batches, plot_size, save_size, d_iters, data_name, data_path, path_output)
         wgan.train()
